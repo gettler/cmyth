@@ -179,26 +179,26 @@ __mvp_atomic_decrement(mvp_atomic_t *valp)
 #define mvp_atomic_inc __mvp_atomic_inc
 static inline int mvp_atomic_inc(mvp_atomic_t *a) {
 	return __mvp_atomic_increment(a);
-};
+}
 
 #define mvp_atomic_dec __mvp_atomic_dec
 static inline int mvp_atomic_dec(mvp_atomic_t *a) {
 	return __mvp_atomic_decrement(a);
-};
+}
 
 #define mvp_atomic_dec_and_test __mvp_atomic_dec_and_test
 static inline int mvp_atomic_dec_and_test(mvp_atomic_t *a) {
 	return (__mvp_atomic_decrement(a) == 0);
-};
+}
 
 #define mvp_atomic_set __mvp_atomic_set
 static inline void mvp_atomic_set(mvp_atomic_t *a, unsigned val) {
 	*a = val;
-};
+}
 
 #define mvp_atomic_val __mvp_atomic_val
 static inline int mvp_atomic_val(mvp_atomic_t *a) {
 	return *a;
-};
+}
 
 #endif  /* __MVP_ATOMIC_H */

@@ -66,6 +66,9 @@ if 'all' in COMMAND_LINE_TARGETS:
 #
 cs = env.find_binary('cscope')
 dox = env.find_binary('doxygen')
+ctg = env.find_binary('ctypesgen.py')
+
+env.Replace(CTYPESGEN = ctg)
 
 #
 # Find the install prefix

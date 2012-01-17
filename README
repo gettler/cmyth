@@ -1,6 +1,12 @@
 libcmyth is a library implemented in C that allows you to communicate
 with a MythTV backend.
 
+In order to build everything, you will require the following:
+
+	scons		- required to build anything
+	ctypesgen.py	- required to build the python language binding
+	MySQL		- required for MySQL access to MythTV backends
+
 The build is controlled with scons, and there are several build targets
 available (the default target will just build the code):
 

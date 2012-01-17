@@ -31,7 +31,7 @@ shared = env.SharedLibrary('refmem', src,
                            LIBS = [],
                            CPPPATH = [ '../include', '.' ])
 
-link2 = env.Command(soname2, shared,
+link2 = env.Command(soname2, soname,
                    'ln -sf %s %s' % (soname, soname2), chdir=1)
 link3 = env.Command(soname3, soname2,
                    'ln -sf %s %s' % (soname2, soname3), chdir=1)
@@ -40,6 +40,9 @@ if sys.platform == 'darwin':
     targets = [ static ]
 else:
     targets = [ static, shared, link2, link3 ]
+
+env.Depends(static, link2)
+env.Depends(static, link3)
 
 prefix = env['PREFIX']
 install = env.Install(prefix + '/lib', targets)

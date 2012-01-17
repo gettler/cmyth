@@ -36,13 +36,15 @@ else:
 
 static = env.StaticLibrary('cmyth', src,
                            LINKFLAGS = linkflags,
-                           LIBS = [],
-                           CPPPATH = [ '../include', '.' ])
+                           LIBS = [ 'refmem' ],
+                           CPPPATH = [ '../include', '.' ],
+                           LIBPATH = [ '../librefmem' ])
 shared = env.SharedLibrary('cmyth', src,
                            SHLIBSUFFIX = '.so.' + version,
                            LINKFLAGS = linkflags,
-                           LIBS = [],
-                           CPPPATH = [ '../include', '.' ])
+                           LIBS = [ 'refmem' ],
+                           CPPPATH = [ '../include', '.' ],
+                           LIBPATH = [ '../librefmem' ])
 
 link2 = env.Command(soname2, shared,
                    'ln -sf %s %s' % (soname, soname2), chdir=1)

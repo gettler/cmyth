@@ -1,3 +1,4 @@
+.*
 *.o
 *.os
 *.a
@@ -18,3 +19,4 @@ cscope.po.out
 doc
 cmyth.conf
 cmyth/build
+src/cmyth_ffi.py

@@ -5,6 +5,8 @@
 
 Import('env')
 
+ctg = env['CTYPESGEN']
+
 libs = [ 'cmyth', 'pthread', 'refmem', ]
 
 if not env.GetOption('clean'):
@@ -12,6 +14,13 @@ if not env.GetOption('clean'):
     if conf.CheckLib('mysqlclient'):
         libs += [ 'mysqlclient' ]
     env = conf.Finish()
+
+if ctg != '':
+    ctypesgen = env.Command([ 'cmyth_ffi.py' ],
+                            [ Glob('include/*.h'),
+                              Glob('include/*/*.h') ],
+                            [ 'ctypesgen.py -lrefmem -lcmyth include/*.h include/refmem/*.h include/cmyth/*.h -o src/cmyth_ffi.py' ])
+    env.Alias('ctypesgen', [ ctypesgen ])
 
 mythfuse = env.Program('mythfuse', 'mythfuse.c',
                        CCFLAGS = ' -D_FILE_OFFSET_BITS=64',
@@ -31,6 +40,9 @@ mythcat = env.Program('mythcat', 'mythcat.c',
 
 targets = [ mythping, mythcat ]
 
+if ctg != '':
+    targets += [ ctypesgen ]
+
 if not env.GetOption('clean'):
     conf = Configure(env)
     if conf.CheckLib('fuse'):
@@ -41,5 +53,8 @@ else:
 
 prefix = env['PREFIX']
 env.Install(prefix + '/bin', targets)
+
+if not env.GetOption('clean') and ctg != '':
+    env.Install(prefix + '/bin', [ 'cmyth.py', 'mythinfo.py' ])
 
 Return('targets')
