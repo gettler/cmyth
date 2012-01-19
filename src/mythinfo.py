@@ -54,7 +54,7 @@ def do_cat(i):
     f = open(output, 'wb')
     prog = list.get_prog(i)
     server = prog.host()
-    file = prog.get_file(server, 6543, block, 4096)
+    file = prog.get_file(server)
     length = prog.length()
     name = prog.pathname()[1:]
     print 'Writing %d bytes of %s to %s' % (length, name, output)
@@ -114,7 +114,7 @@ if server == None:
     usage(1)
 
 try:
-    conn = cmyth.connection(server, 6543, 1024 * 128, 4096)
+    conn = cmyth.connection(server)
 except:
     print 'Could not connect to MythTV server at %s' % server
     sys.exit(-1)

@@ -17,6 +17,10 @@ except ImportError, e:
 cmyth = cmyth_ffi
 refmem = cmyth_ffi
 
+default_port = 6543
+default_buflen = 128 * 1024
+default_tcp_rcvbuf = 4096
+
 class ExceptionCmyth(Exception):
     '''cmyth exception base class'''
 
@@ -44,14 +48,18 @@ class ExceptionCmyth(Exception):
 class connection:
     '''A MythTV connection'''
 
-    def __init__(self, server, port, buflen, tcp_rcvbuf):
+    def __init__(self, server, port=default_port, buflen=default_buflen,
+                 tcp_rcvbuf=default_tcp_rcvbuf):
+        self.conn = None
         self.conn = cmyth.cmyth_conn_connect_ctrl(server, port, buflen,
                                                   tcp_rcvbuf)
-        if self.conn == 0:
+        if self.protocol_version() < 0:
+            self.conn = None
             raise ExceptionCmyth('connection failed')
 
     def __del__(self):
-        refmem.ref_release(self.conn)
+        if self.conn != None:
+            refmem.ref_release(self.conn)
 
     def protocol_version(self):
         return cmyth.cmyth_conn_get_protocol_version(self.conn)
@@ -112,7 +120,8 @@ class proginfo:
     def __del__(self):
         refmem.ref_release(self.prog)
 
-    def get_file(self, server, port, buflen, tcp_rcvbuf):
+    def get_file(self, server, port=default_port,
+                 buflen=default_buflen, tcp_rcvbuf=default_tcp_rcvbuf):
         conn = cmyth.cmyth_conn_connect_ctrl(server, port, buflen, tcp_rcvbuf)
         f = recording(self.prog, conn, buflen, tcp_rcvbuf)
         refmem.ref_release(conn)
