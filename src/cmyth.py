@@ -172,6 +172,20 @@ class proginfo:
     def stars(self):
         return cmyth.cmyth_proginfo_stars(self.prog)
 
+    def commbreaklist(self):
+        server = self.host()
+        conn = cmyth.cmyth_conn_connect_ctrl(server, self.port(),
+                                             default_buflen, default_tcp_rcvbuf)
+        cbl = cmyth.cmyth_get_commbreaklist(conn, self.prog)
+        n = cbl[0].commbreak_count
+        list = []
+        for i in range(n):
+            item = [ cbl[0].commbreak_list[i][0].start_mark,
+                     cbl[0].commbreak_list[i][0].end_mark ]
+            list.append(item)
+        refmem.ref_release(conn)
+        return list
+
 #
 # Simple test app for when this is called directly.
 #

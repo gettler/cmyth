@@ -38,6 +38,9 @@ def do_proglist():
         print '    %s - %s' % (title, subtitle)
         print '        %s - %d bytes' % (path[1:], length)
         print '        ' + chan
+        cbl = prog.commbreaklist()
+        for i in cbl:
+            print '        %d - %d' % (i[0], i[1])
         start = 0
         end = 60
         for i in range(len(desc)/60):

@@ -55,6 +55,7 @@ prefix = env['PREFIX']
 env.Install(prefix + '/bin', targets)
 
 if not env.GetOption('clean') and ctg != '':
-    env.Install(prefix + '/bin', [ 'cmyth.py', 'mythinfo.py', 'mythplayer.py' ])
+    env.Install(prefix + '/bin', [ 'cmyth.py', 'mythinfo.py', 'mythplayer.py',
+                                   'mythtranscode.py' ])
 
 Return('targets')
