@@ -217,7 +217,7 @@ extern void cmyth_dbg(int level, char *fmt, ...);
  */
 extern cmyth_conn_t cmyth_conn_connect_ctrl(char *server,
 					    unsigned short port,
-					    unsigned buflen, int tcp_rcvbuf);
+					    unsigned int buflen, int tcp_rcvbuf);
 
 /**
  * Create an event connection to a backend.

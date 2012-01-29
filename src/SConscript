@@ -3,11 +3,16 @@
 # cmyth apps
 #
 
+import os
+
 Import('env')
 
 ctg = env['CTYPESGEN']
+prefix = env['PREFIX']
 
 libs = [ 'cmyth', 'pthread', 'refmem', ]
+cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
+libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
 
 if not env.GetOption('clean'):
     conf = Configure(env)
@@ -26,19 +31,37 @@ mythfuse = env.Program('mythfuse', 'mythfuse.c',
                        CCFLAGS = ' -D_FILE_OFFSET_BITS=64',
                        CPPPATH = [ '../include' ],
                        LIBS = libs + [ 'fuse' ],
-                       LIBPATH = [ '../libcmyth', '../librefmem' ])
+                       LIBPATH = libpath)
 
 mythping = env.Program('mythping', 'mythping.c',
                        CPPPATH = [ '../include' ],
                        LIBS = libs,
-                       LIBPATH = [ '../libcmyth', '../librefmem' ])
+                       LIBPATH = libpath)
 
 mythcat = env.Program('mythcat', 'mythcat.c',
                       CPPPATH = [ '../include' ],
                       LIBS = libs,
-                      LIBPATH = [ '../libcmyth', '../librefmem' ])
+                      LIBPATH = libpath)
 
-targets = [ mythping, mythcat ]
+cppmythtest = env.Program('cppmythtest', 'cppmythtest.cc',
+                          CPPPATH = [ '../include' ],
+                          LIBS = cpplibs,
+                          LIBPATH = libpath)
+
+targets = [ mythping, mythcat, cppmythtest ]
+
+if env.swig_use_java():
+    java_test = env.Command('cmythtest.class', 'cmythtest.java',
+                            [ 'javac -classpath %s -d '
+                              '%s -sourcepath %s %s' % ('../swig', '.',
+                                                        '.',
+                                                        'cmythtest.java') ],
+                            chdir='src')
+    targets += java_test
+    env.Install(prefix + '/bin', java_test)
+
+if env.swig_use_ruby():
+    env.Install(prefix + '/bin', 'cmythtest.rb')
 
 if ctg != '':
     targets += [ ctypesgen ]

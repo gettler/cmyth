@@ -1,0 +1,141 @@
+#
+# SWIG - Simplified Wrapper and Interface Generator
+#
+# Generate interfaces to libcmyth for other languages.
+#
+
+import os
+import sys
+import shutil
+from distutils import sysconfig
+
+Import('env')
+
+swig = env.find_binary('swig')
+
+prefix = env['PREFIX']
+
+targets = []
+
+if swig != '':
+    interface = [ 'cmyth.i', Glob('../include/*.h'), Glob('../include/*/*.h') ]
+    cmd = 'swig -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
+    cmd_java = 'swig -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
+
+    conf = Configure(env)
+
+    #
+    # Python
+    #
+    if os.path.isfile(sysconfig.get_python_inc() + '/Python.h'):
+        python = env.Command([ 'cmyth_python.cc', 'cmyth.py' ],
+                             interface,
+                             [ cmd % ('python', 'cmyth_python.cc') ])
+        targets += python
+        shared = env.SharedLibrary('cmyth_python',
+                                   [ 'cmyth_python.cc' ],
+                                   SHLIBSUFFIX = '.so',
+                                   LIBS = [ 'cppmyth' ],
+                                   CPPPATH = [ '../include', '.',
+                                               sysconfig.get_python_inc() ],
+                                   LIBPATH = [ '../libcppmyth' ])
+        targets += shared
+        env.Install(prefix + '/lib', [ 'cmyth.py' ])
+        env.Install(prefix + '/lib', shared)
+
+    #
+    # PHP
+    #
+    if os.path.isfile('/usr/include/php5/main/php.h'):
+        php = env.Command([ 'cmyth_php.cc', 'php_cmyth.h', 'cmyth.php' ],
+                          interface,
+                          [ cmd % ('php', 'cmyth_php.cc') ])
+        targets += php
+        shared = env.SharedLibrary('cmyth_php',
+                                   [ 'cmyth_php.cc' ],
+                                   SHLIBSUFFIX = '.so',
+                                   LIBS = [ 'cppmyth' ],
+                                   CPPPATH = [ '../include', '.',
+                                               '/usr/include/php5',
+                                               '/usr/include/php5/main',
+                                               '/usr/include/php5/TSRM',
+                                               '/usr/include/php5/Zend' ],
+                                   LIBPATH = [ '../libcppmyth' ])
+        targets += shared
+        env.Install(prefix + '/lib', shared)
+
+    #
+    # Ruby
+    #
+    rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
+                                      '\'puts Config::CONFIG["archdir"]\'')
+    if rc == 0 and os.path.isfile(rubyarch[:-1] + '/ruby.h'):
+        ruby = env.Command([ 'cmyth_ruby.cc' ],
+                           interface,
+                           [ cmd % ('ruby', 'cmyth_ruby.cc') ])
+        targets += ruby
+        shared = env.SharedLibrary('cmyth_ruby',
+                                   [ 'cmyth_ruby.cc' ],
+                                   SHLIBSUFFIX = '.so',
+                                   LIBS = [ 'cppmyth' ],
+                                   CPPPATH = [ '../include', '.',
+                                               rubyarch[:-1] ],
+                                   LIBPATH = [ '../libcppmyth' ])
+        targets += shared
+        link = env.Command('cmyth.so', shared,
+                           'ln -sf libcmyth_ruby.so cmyth.so', chdir=1)
+        targets += link
+        env.Install(prefix + '/lib', shared)
+        env.Command(prefix + '/lib/cmyth.so', 'libcmyth_ruby.so',
+                    'ln -sf libcmyth_ruby.so %s' % (prefix + '/lib/cmyth.so'))
+
+    #
+    # Java
+    #
+    if env.swig_use_java():
+        javapath = env['JAVA_HOME']
+        if os.path.isfile(javapath + '/include/jni.h'):
+            path = 'org/mvpmc/cmyth/java'
+            try:
+                os.makedirs(path)
+            except:
+                pass
+            src = [ path + '/cmyth.java', path + '/cmythJNI.java',
+                    path + '/connection.java', 'cmyth_java.cc' ]
+            class_src = [ path + '/cmyth.java', path + '/cmythJNI.java',
+                          path + '/connection.java' ]
+            classes = path + '/cmyth.java ' + path + '/cmythJNI.java ' + path + '/connection.java'
+            java = env.Command(src,
+                               interface,
+                               [ cmd_java % ('java', 'org.mvpmc.cmyth.java',
+                                             'swig/' + path, 'cmyth_java.cc') ])
+            targets += java
+            shared = env.SharedLibrary('cmyth_java',
+                                       [ 'cmyth_java.cc' ],
+                                       SHLIBSUFFIX = '.so',
+                                       LIBS = [ 'cppmyth' ],
+                                       CPPPATH = [ '../include', '.',
+                                                   javapath + '/include' ],
+                                       LIBPATH = [ '../libcppmyth' ])
+            targets += shared
+            output = env.Command(path + '/cmyth.class',
+                                 java,
+                                 [ 'javac -d %s -sourcepath %s %s' % ('.',
+                                                                      path,
+                                                                      classes) ],
+                                 chdir='swig')
+                                  
+            jar = env.Command('cmyth.jar', output,
+                              [ 'jar cf cmyth.jar ' + path + '/cmyth.class ' + path + '/cmythJNI.class ' + path + '/connection.class' ],
+                              chdir='swig')
+            targets += jar
+
+            env.Install(prefix + '/lib', shared)
+            env.Install(prefix + '/lib', jar)
+
+            if env.GetOption('clean'):
+                shutil.rmtree('org')
+
+    env = conf.Finish()
+
+Return('targets')

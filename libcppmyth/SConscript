@@ -1,50 +1,37 @@
 #!/usr/bin/python
 #
-# libcmyth
+# libcppmyth
 #
 
 import sys
 
 Import('env')
 
-src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
-        'file.c', 'freespace.c', 'keyframe.c',
-        'posmap.c', 'proginfo.c', 'proglist.c', 'rec_num.c', 
-        'recorder.c', 'ringbuf.c', 'socket.c', 'timestamp.c',
-        'livetv.c', 'commbreak.c' ]
-
-if not env.GetOption('clean'):
-    conf = Configure(env)
-    if conf.CheckCHeader('mysql/mysql.h'):
-        conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
-        src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
-    env = conf.Finish()
-else:
-    src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
+src = [ 'myth.cc' ]
 
 major = '0'
 minor = '1'
 version = major + '.' + minor
-soname = 'libcmyth.so.' + version
-soname2 = 'libcmyth.so.' + major
-soname3 = 'libcmyth.so'
+soname = 'libcppmyth.so.' + version
+soname2 = 'libcppmyth.so.' + major
+soname3 = 'libcppmyth.so'
 
 if sys.platform == 'darwin':
     linkflags = [ ]
 else:
     linkflags = [ '-Wl,-soname,' + soname ]
 
-static = env.StaticLibrary('cmyth', src,
+static = env.StaticLibrary('cppmyth', src,
                            LINKFLAGS = linkflags,
-                           LIBS = [ 'refmem' ],
+                           LIBS = [ 'cmyth' ],
                            CPPPATH = [ '../include', '.' ],
-                           LIBPATH = [ '../librefmem' ])
-shared = env.SharedLibrary('cmyth', src,
+                           LIBPATH = [ '../libcmyth' ])
+shared = env.SharedLibrary('cppmyth', src,
                            SHLIBSUFFIX = '.so.' + version,
                            LINKFLAGS = linkflags,
-                           LIBS = [ 'refmem' ],
+                           LIBS = [ 'cmyth' ],
                            CPPPATH = [ '../include', '.' ],
-                           LIBPATH = [ '../librefmem' ])
+                           LIBPATH = [ '../libcmyth' ])
 
 link2 = env.Command(soname2, shared,
                    'ln -sf %s %s' % (soname, soname2), chdir=1)
@@ -55,9 +42,6 @@ if sys.platform == 'darwin':
     targets = [ static ]
 else:
     targets = [ static, shared, link2, link3 ]
-
-env.Depends(static, link2)
-env.Depends(static, link3)
 
 prefix = env['PREFIX']
 install = env.Install(prefix + '/lib', targets)

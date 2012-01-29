@@ -75,14 +75,13 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = src include include/cmyth include/refmem libcmyth librefmem
-FILE_PATTERNS          = *.h \
-                         *.c
+INPUT                  = src include include/cmyth include/cppmyth include/refmem libcmyth libcppmyth librefmem
+FILE_PATTERNS          = *.h *.c *.cc
 RECURSIVE              = NO
 EXCLUDE                = 
 			 
 EXCLUDE_SYMLINKS       = NO
-EXCLUDE_PATTERNS       = 
+EXCLUDE_PATTERNS       = .*
 EXAMPLE_PATH           = 
 EXAMPLE_PATTERNS       = 
 EXAMPLE_RECURSIVE      = NO

@@ -7,9 +7,11 @@
 *~
 .sconsign*
 *.pyc
+*.class
 src/mythcat
 src/mythfuse
 src/mythping
+src/cppmythtest
 .sconf_temp
 config.log
 cscope.files
@@ -17,6 +19,7 @@ cscope.in.out
 cscope.out
 cscope.po.out
 doc
+install
 cmyth.conf
 cmyth/build
 src/cmyth_ffi.py
