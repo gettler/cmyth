@@ -36,6 +36,11 @@
 extern int ref_get_refcount();
 
 /**
+ * Retrieve the number of references and total bytes used.
+ */
+extern void ref_get_usage(unsigned int *refs, unsigned int *bytes);
+
+/**
  * Release a reference to allocated memory.
  * \param p allocated memory
  */

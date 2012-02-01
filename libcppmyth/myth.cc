@@ -21,15 +21,39 @@
 
 using namespace cmyth;
 
+exception::exception(const char *str)
+{
+	msg = str;
+}
+
+const char*
+exception::what() const throw()
+{
+	return msg;
+}
+
 connection::connection(char *server, unsigned short port,
 		       unsigned int buflen, int tcp_rcvbuf)
 {
 	conn = cmyth_conn_connect_ctrl(server, port, buflen, tcp_rcvbuf);
+
+	if (conn == NULL) {
+		throw exception("Connection failed");
+	}
 }
 
 connection::~connection()
 {
-	ref_release(conn);
+	release();
+}
+
+void
+connection::release(void)
+{
+	if (conn) {
+		ref_release(conn);
+		conn = NULL;
+	}
 }
 
 int
@@ -40,4 +64,10 @@ connection::protocol_version(void)
 	} else {
 		return -1;
 	}
+}
+
+proglist*
+connection::get_proglist(void)
+{
+	return new proglist(conn);
 }

@@ -7,7 +7,7 @@ import sys
 
 Import('env')
 
-src = [ 'myth.cc' ]
+src = [ 'myth.cc', 'proginfo.cc', 'proglist.cc', 'refmem.cc' ]
 
 major = '0'
 minor = '1'

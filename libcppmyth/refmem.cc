@@ -17,24 +17,40 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * cmyth.i - SWIG interface file for libcmyth
- */
-
-%module cmyth
-
-%{
 #include <cppmyth/cppmyth.h>
-%}
 
-%include "exception.i"
+using namespace cmyth;
 
-%exception {
-    try {
-        $action
-    } catch (cmyth::exception& e) {
-        SWIG_exception(SWIG_RuntimeError,const_cast<char*>(e.what()));
-    }
+refmem::refmem()
+{
 }
 
-%include <cppmyth/cppmyth.h>
+refmem::~refmem()
+{
+}
+
+unsigned int
+refmem::refs(void)
+{
+	unsigned int items, bytes;
+
+	ref_get_usage(&items, &bytes);
+
+	return items;
+}
+
+unsigned int
+refmem::bytes(void)
+{
+	unsigned int items, bytes;
+
+	ref_get_usage(&items, &bytes);
+
+	return bytes;
+}
+
+void
+refmem::show(void)
+{
+	ref_alloc_show();
+}

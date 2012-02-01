@@ -20,12 +20,43 @@
 #ifndef __CPPMYTH_H
 #define __CPPMYTH_H
 
-namespace cmyth {
-
 extern "C" {
 #include <cmyth/cmyth.h>
 #include <refmem/refmem.h>
 }
+
+#include <exception>
+
+namespace cmyth {
+
+class connection;
+class proginfo;
+class proglist;
+class recording;
+
+class exception : public std::exception {
+public:
+	exception(const char *str = "cmyth exception");
+	virtual const char* what() const throw();
+
+	void release(void) { }
+
+private:
+	const char *msg;
+};
+
+class refmem {
+public:
+	refmem();
+	~refmem();
+
+	unsigned int refs(void);
+	unsigned int bytes(void);
+
+	void show(void);
+
+	void release(void) { }
+};
 
 class connection {
 public:
@@ -34,9 +65,55 @@ public:
 	~connection();
 
 	int protocol_version(void);
+	proglist* get_proglist(void);
+
+	void release(void);
 
 private:
 	cmyth_conn_t conn;
+};
+
+class proglist {
+public:
+	proglist(cmyth_conn_t conn);
+	~proglist();
+
+	int get_count(void);
+	proginfo* get_prog(int which);
+
+	void release(void);
+
+private:
+	cmyth_proglist_t list;
+};
+
+class proginfo {
+public:
+	proginfo(cmyth_proglist_t list, int which);
+	~proginfo();
+
+	int port(void);
+
+	long long length(void);
+	long channel_id(void);
+
+	char* category(void);
+	char* channel_name(void);
+	char* channel_sign(void);
+	char* channel_string(void);
+	char* description(void);
+	char* host(void);
+	char* pathname(void);
+	char* program_id(void);
+	char* series_id(void);
+	char* stars(void);
+	char* subtitle(void);
+	char* title(void);
+
+	void release(void);
+
+private:
+	cmyth_proginfo_t prog;
 };
 
 }

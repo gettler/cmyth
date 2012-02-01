@@ -140,10 +140,12 @@ cppmyth = SConscript('libcppmyth/SConscript')
 refmem = SConscript('librefmem/SConscript')
 src = SConscript('src/SConscript')
 swig = SConscript('swig/SConscript')
+test = SConscript('test/SConscript')
 
-targets = [ cppmyth, cmyth, refmem, src, swig ]
+targets = [ cppmyth, cmyth, refmem, src, swig, test ]
 
 env.Depends(src, swig)
+env.Depends(test, swig)
 
 #
 # install targets

@@ -8,6 +8,7 @@
 .sconsign*
 *.pyc
 *.class
+*.jar
 src/mythcat
 src/mythfuse
 src/mythping
@@ -23,3 +24,10 @@ install
 cmyth.conf
 cmyth/build
 src/cmyth_ffi.py
+swig/*.c
+swig/*.cc
+swig/*.h
+swig/*.php
+swig/*.py
+swig/org
+test/test_cpp

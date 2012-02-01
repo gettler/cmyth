@@ -49,6 +49,7 @@
 #include <stdio.h>
 
 #ifdef DEBUG
+#include <stdint.h>
 #include <assert.h>
 #define ALLOC_MAGIC 0xef37a45d
 #define GUARD_MAGIC 0xe3
@@ -131,6 +132,12 @@ int ref_get_refcount(char *loc)
 		   "%40.40s Refs: %7d   Bytes: %8d\n",
 		   loc,total_refcount,total_bytecount);
 	return(total_refcount);
+}
+
+void ref_get_usage(unsigned int *refs, unsigned int *bytes)
+{
+	*refs = total_refcount;
+	*bytes = total_bytecount;
 }
 
 #if defined(DEBUG)

@@ -1,0 +1,25 @@
+
+Import('env')
+
+targets = []
+
+cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
+libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
+
+if env.swig_use_java():
+    java_test = env.Command('test_java.class', 'test_java.java',
+                            [ 'javac -classpath %s -d '
+                              '%s -sourcepath %s %s' % ('../swig', '.',
+                                                        '.',
+                                                        'test_java.java') ],
+                            chdir='test')
+    targets += java_test
+
+cpp_test = env.Program('test_cpp', 'test_cpp.cc',
+                       CPPPATH = [ '../include' ],
+                       LIBS = cpplibs,
+                       LIBPATH = libpath)
+
+targets += cpp_test
+
+Return('targets')

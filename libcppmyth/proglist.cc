@@ -17,24 +17,39 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * cmyth.i - SWIG interface file for libcmyth
- */
+#include <stdio.h>
 
-%module cmyth
-
-%{
 #include <cppmyth/cppmyth.h>
-%}
 
-%include "exception.i"
+using namespace cmyth;
 
-%exception {
-    try {
-        $action
-    } catch (cmyth::exception& e) {
-        SWIG_exception(SWIG_RuntimeError,const_cast<char*>(e.what()));
-    }
+proglist::proglist(cmyth_conn_t conn)
+{
+	list = cmyth_proglist_get_all_recorded(conn);
 }
 
-%include <cppmyth/cppmyth.h>
+proglist::~proglist()
+{
+	release();
+}
+
+void
+proglist::release(void)
+{
+	if (list) {
+		ref_release(list);
+		list = NULL;
+	}
+}
+
+int
+proglist::get_count(void)
+{
+        return cmyth_proglist_get_count(list);
+}
+
+proginfo*
+proglist::get_prog(int which)
+{
+	return new proginfo(list, which);
+}
