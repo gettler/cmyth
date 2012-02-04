@@ -19,6 +19,7 @@
 #
 
 import sys
+import hashlib
 import cmyth
 
 def test_host(host):
@@ -42,6 +43,25 @@ def test_host(host):
     list.release()
     conn.release()
 
+def test_file(host):
+    conn = cmyth.connection(host)
+    list = conn.get_proglist()
+    prog = list.get_prog(0)
+    file = prog.open()
+    m = hashlib.md5()
+    file.seek(0)
+    for i in range(5):
+        rc,buf = file.read()
+        if rc < 0:
+            print 'Error: file read failed!'
+            break
+        m.update(buf)
+    print 'MD5: %s' % m.hexdigest()
+    file.release()
+    prog.release()
+    list.release()
+    conn.release()
+
 try:
     test_host('nosuchhost')
 except RuntimeError as e:
@@ -51,6 +71,8 @@ try:
     test_host('localhost')
 except RuntimeError as e:
     print 'Exception: %s' % e
+
+test_file('localhost')
 
 ref = cmyth.refmem()
 

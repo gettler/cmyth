@@ -139,12 +139,12 @@ def add_chapters(prog):
     log('Add %d commercial breaks.' % len(cbl))
     f = tempfile.NamedTemporaryFile()
     n = 1
-    for item in cbl:
-        hours,minutes,seconds,ms = timecode(int(item[0]))
+    for i in range(prog.commercial_count()):
+        hours,minutes,seconds,ms = timecode(prog.commercial_start(i))
         f.write('CHAPTER%02d=%.2d:%.2d:%.2d.%.3d\n' %
                 (n, hours, minutes, seconds, ms))
         f.write('CHAPTER%02dNAME=Start\n' % (n))
-        hours,minutes,seconds,ms = timecode(int(item[1]))
+        hours,minutes,seconds,ms = timecode(prog.commercial_end(i))
         n = n + 1
         f.write('CHAPTER%02d=%.2d:%.2d:%.2d.%.3d\n' %
                 (n, hours, minutes, seconds, ms))

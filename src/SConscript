@@ -7,7 +7,6 @@ import os
 
 Import('env')
 
-ctg = env['CTYPESGEN']
 prefix = env['PREFIX']
 
 libs = [ 'cmyth', 'pthread', 'refmem', ]
@@ -20,15 +19,8 @@ if not env.GetOption('clean'):
         libs += [ 'mysqlclient' ]
     env = conf.Finish()
 
-if ctg != '':
-    ctypesgen = env.Command([ 'cmyth_ffi.py' ],
-                            [ Glob('include/*.h'),
-                              Glob('include/*/*.h') ],
-                            [ 'ctypesgen.py -lrefmem -lcmyth include/*.h include/refmem/*.h include/cmyth/*.h -o src/cmyth_ffi.py' ])
-    env.Alias('ctypesgen', [ ctypesgen ])
-
 mythfuse = env.Program('mythfuse', 'mythfuse.c',
-                       CCFLAGS = ' -D_FILE_OFFSET_BITS=64',
+                       CCFLAGS = env['CCFLAGS'] + ' -D_FILE_OFFSET_BITS=64',
                        CPPPATH = [ '../include' ],
                        LIBS = libs + [ 'fuse' ],
                        LIBPATH = libpath)
@@ -43,28 +35,7 @@ mythcat = env.Program('mythcat', 'mythcat.c',
                       LIBS = libs,
                       LIBPATH = libpath)
 
-cppmythtest = env.Program('cppmythtest', 'cppmythtest.cc',
-                          CPPPATH = [ '../include' ],
-                          LIBS = cpplibs,
-                          LIBPATH = libpath)
-
-targets = [ mythping, mythcat, cppmythtest ]
-
-if env.swig_use_java():
-    java_test = env.Command('cmythtest.class', 'cmythtest.java',
-                            [ 'javac -classpath %s -d '
-                              '%s -sourcepath %s %s' % ('../swig', '.',
-                                                        '.',
-                                                        'cmythtest.java') ],
-                            chdir='src')
-    targets += java_test
-    env.Install(prefix + '/bin', java_test)
-
-if env.swig_use_ruby():
-    env.Install(prefix + '/bin', 'cmythtest.rb')
-
-if ctg != '':
-    targets += [ ctypesgen ]
+targets = [ mythping, mythcat ]
 
 if not env.GetOption('clean'):
     conf = Configure(env)
@@ -76,9 +47,7 @@ else:
 
 prefix = env['PREFIX']
 env.Install(prefix + '/bin', targets)
-
-if not env.GetOption('clean') and ctg != '':
-    env.Install(prefix + '/bin', [ 'cmyth.py', 'mythinfo.py', 'mythplayer.py',
-                                   'mythtranscode.py' ])
+env.Install(prefix + '/bin', [ 'mythinfo.py', 'mythplayer.py',
+                               'mythtranscode.py' ])
 
 Return('targets')

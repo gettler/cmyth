@@ -11,8 +11,6 @@ from distutils import sysconfig
 
 Import('env')
 
-swig = env.find_binary('swig')
-
 prefix = env['PREFIX']
 
 targets = []
@@ -27,12 +25,12 @@ conf = Configure(env)
 # Python
 #
 if env.swig_use_python():
-    python = env.Command([ 'cmyth_python.cc', 'cmyth.py' ],
+    python = env.Command([ 'cmyth_python.cpp', 'cmyth.py' ],
                          interface,
-                         [ cmd % ('python', 'cmyth_python.cc') ])
+                         [ cmd % ('python', 'cmyth_python.cpp') ])
     targets += python
     shared = env.SharedLibrary('cmyth_python',
-                               [ 'cmyth_python.cc' ],
+                               [ 'cmyth_python.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth' ],
                                CPPPATH = [ '../include', '.',
@@ -50,12 +48,12 @@ if env.swig_use_python():
 # PHP
 #
 if env.swig_use_php():
-    php = env.Command([ 'cmyth_php.cc', 'php_cmyth.h', 'cmyth.php' ],
+    php = env.Command([ 'cmyth_php.cpp', 'php_cmyth.h', 'cmyth.php' ],
                       interface,
-                      [ cmd % ('php', 'cmyth_php.cc') ])
+                      [ cmd % ('php', 'cmyth_php.cpp') ])
     targets += php
     shared = env.SharedLibrary('cmyth_php',
-                               [ 'cmyth_php.cc' ],
+                               [ 'cmyth_php.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth' ],
                                CPPPATH = [ '../include', '.',
@@ -78,12 +76,12 @@ if env.swig_use_php():
 if env.swig_use_ruby():
     rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
                                       '\'puts Config::CONFIG["archdir"]\'')
-    ruby = env.Command([ 'cmyth_ruby.cc' ],
+    ruby = env.Command([ 'cmyth_ruby.cpp' ],
                        interface,
-                       [ cmd % ('ruby', 'cmyth_ruby.cc') ])
+                       [ cmd % ('ruby', 'cmyth_ruby.cpp') ])
     targets += ruby
     shared = env.SharedLibrary('cmyth_ruby',
-                               [ 'cmyth_ruby.cc' ],
+                               [ 'cmyth_ruby.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth' ],
                                CPPPATH = [ '../include', '.',
@@ -107,11 +105,14 @@ if env.swig_use_java():
             os.makedirs(path)
         except:
             pass
-        bases = [ 'cmyth', 'cmythJNI',
+        bases = [ 'cmyth', 'cmythJNI', 'cmythConstants',
                   'SWIGTYPE_p_cmyth_conn_t',
                   'SWIGTYPE_p_cmyth_proglist_t',
+                  'SWIGTYPE_p_cmyth_proginfo_t',
+                  'SWIGTYPE_p_int',
+                  'SWIGTYPE_p_p_char',
                   'connection', 'exception', 'proginfo', 'proglist',
-                  'refmem' ]
+                  'refmem', 'file' ]
         src_list = []
         for i in bases:
             src_list.append(i + '.java')
@@ -121,14 +122,14 @@ if env.swig_use_java():
         classes = ''
         for i in bases:
             classes = classes + path + '/' + i + '.class '
-        src_list.append('cmyth_java.cc')
+        src_list.append('cmyth_java.cpp')
         java = env.Command(src_list,
                            interface,
                            [ cmd_java % ('java', 'org.mvpmc.cmyth.java',
-                                         'swig/' + path, 'cmyth_java.cc') ])
+                                         'swig/' + path, 'cmyth_java.cpp') ])
         targets += java
         shared = env.SharedLibrary('cmyth_java',
-                                   [ 'cmyth_java.cc' ],
+                                   [ 'cmyth_java.cpp' ],
                                    SHLIBSUFFIX = '.so',
                                    LIBS = [ 'cppmyth' ],
                                    CPPPATH = [ '../include', '.',
@@ -151,7 +152,10 @@ if env.swig_use_java():
         env.Install(prefix + '/lib', jar)
 
         if env.GetOption('clean'):
-            shutil.rmtree('org')
+            try:
+                shutil.rmtree('org')
+            except:
+                pass
 
 env = conf.Finish()
 

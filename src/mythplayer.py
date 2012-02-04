@@ -280,54 +280,33 @@ class httpd(SimpleHTTPServer.SimpleHTTPRequestHandler):
         global current
         self.prog = current
         length = self.prog.length()
-        server = self.prog.host()
-        file = self.prog.get_file(server)
+        file = self.prog.open()
         self.send_response(200)
         self.send_header('Content-Length', str(length))
         self.end_headers()
-        offset = 0
-        while offset < length:
-            file.seek(offset)
-            if (offset+block) < length:
-                size = block;
-            else:
-                size = length - offset;
-            file.request_block(size)
-            n = 0
-            while n < size:
-                len,data = file.get_block()
-                if len <= 0:
-                    break
-                self.wfile.write(data[:len])
-                n += len
-            offset += size
+        file.seek(0)
+        while True:
+            rc,buf = file.read()
+            if rc < 0:
+                break
+            self.wfile.write(buf)
 
     def write_file(self, s):
         block = 1024 * 128
         server = self.prog.host()
-        file = self.prog.get_file(server)
+        file = self.prog.open(server)
         length = self.prog.length()
         name = self.prog.pathname()[1:]
         print 'Writing %d bytes of %s' % (length, name)
         header = 'HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n' % length
         print header
         s.send(header)
-        offset = 0
-        while offset < length:
-            file.seek(offset)
-            if (offset+block) < length:
-                size = block;
-            else:
-                size = length - offset;
-            file.request_block(size)
-            n = 0
-            while n < size:
-                len,data = file.get_block()
-                if len <= 0:
-                    break
-                s.send(data[:len])
-                n += len
-            offset += size
+        file.seek(0)
+        while True:
+            rc,buf = file.read()
+            if rc < 0:
+                break
+            s.send(buf)
         s.close()
 
 def find_binary(filename):

@@ -33,14 +33,14 @@ def do_proglist():
         subtitle = prog.subtitle()
         desc = prog.description()
         path = prog.pathname()
-        chan = prog.channame()
+        chan = prog.channel_name()
         length = prog.length()
         print '    %s - %s' % (title, subtitle)
         print '        %s - %d bytes' % (path[1:], length)
         print '        ' + chan
-        cbl = prog.commbreaklist()
-        for i in cbl:
-            print '        %d - %d' % (i[0], i[1])
+        for i in range(prog.commercial_count()):
+            print '        %d - %d' % (prog.commercial_start(i),
+                                       prog.commercial_end(i))
         start = 0
         end = 60
         for i in range(len(desc)/60):
@@ -49,37 +49,27 @@ def do_proglist():
             end += 60
 
 def do_cat(i):
-    block = 1024 * 128
     list = conn.get_proglist()
     count = list.get_count()
     if i > count:
         throw
     f = open(output, 'wb')
     prog = list.get_prog(i)
-    server = prog.host()
-    file = prog.get_file(server)
+    file = prog.open()
     length = prog.length()
     name = prog.pathname()[1:]
     print 'Writing %d bytes of %s to %s' % (length, name, output)
-    offset = 0
-    while offset < length:
-        file.seek(offset)
-        if (offset+block) < length:
-            size = block;
-        else:
-            size = length - offset;
-        file.request_block(size)
-        n = 0
-        while n < size:
-            len,data = file.get_block()
-            if len <= 0:
-                break
-            f.write(data[:len])
-            n += len
-        offset += size
+    file.seek(0)
+    while True:
+        rc,buf = file.read()
+        if len(buf) == 0:
+            break
+        f.write(buf)
+    file.release()
+    f.close()
 
 def usage(code):
-    print 'Usage: mythctrl [options]'
+    print 'Usage: mythinfo.py [options]'
     print '       --cat number        dump a recording to stdout'
     print '       --help              print this help'
     print '       --info              print backend info'

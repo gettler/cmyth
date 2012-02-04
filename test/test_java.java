@@ -22,6 +22,7 @@ import org.mvpmc.cmyth.java.refmem;
 import org.mvpmc.cmyth.java.connection;
 import org.mvpmc.cmyth.java.proglist;
 import org.mvpmc.cmyth.java.proginfo;
+import org.mvpmc.cmyth.java.file;
 
 public class test_java {
 	public static void test_host(String host) {
@@ -53,6 +54,22 @@ public class test_java {
 			prog.release();
 		}
 
+		conn.release();
+		list.release();
+	}
+
+	public static void test_file(String host) {
+		connection conn;
+		proglist list;
+		proginfo prog;
+		file file;
+
+		conn = new connection(host);
+		list = conn.get_proglist();
+		prog = list.get_prog(0);
+		file = prog.open();
+		file.seek(0);
+		prog.release();
 		conn.release();
 		list.release();
 	}

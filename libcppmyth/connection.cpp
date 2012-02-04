@@ -17,39 +17,46 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <stdio.h>
-
 #include <cppmyth/cppmyth.h>
 
 using namespace cmyth;
 
-proglist::proglist(cmyth_conn_t conn)
+connection::connection(const char *server, unsigned short port,
+		       unsigned int buflen, int tcp_rcvbuf)
 {
-	list = cmyth_proglist_get_all_recorded(conn);
+	conn = cmyth_conn_connect_ctrl((char*)server, port, buflen, tcp_rcvbuf);
+
+	if (conn == NULL) {
+		throw exception("Connection failed");
+	}
 }
 
-proglist::~proglist()
+connection::~connection()
 {
 	release();
 }
 
 void
-proglist::release(void)
+connection::release(void)
 {
-	if (list) {
-		ref_release(list);
-		list = NULL;
+	if (conn) {
+		ref_release(conn);
+		conn = NULL;
 	}
 }
 
 int
-proglist::get_count(void)
+connection::protocol_version(void)
 {
-        return cmyth_proglist_get_count(list);
+	if (conn) {
+		return cmyth_conn_get_protocol_version(conn);
+	} else {
+		return -1;
+	}
 }
 
-proginfo*
-proglist::get_prog(int which)
+proglist*
+connection::get_proglist(void)
 {
-	return new proginfo(list, which);
+	return new proglist(conn);
 }

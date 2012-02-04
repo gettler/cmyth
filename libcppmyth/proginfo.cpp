@@ -21,9 +21,11 @@
 
 using namespace cmyth;
 
-proginfo::proginfo(cmyth_proglist_t list, int which)
+proginfo::proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which)
 {
 	prog = cmyth_proglist_get_item(list, which);
+
+	cbl = cmyth_get_commbreaklist(conn, prog);
 }
 
 proginfo::~proginfo()
@@ -38,10 +40,14 @@ proginfo::release(void)
 		ref_release(prog);
 		prog = NULL;
 	}
+	if (cbl) {
+		ref_release(cbl);
+		cbl = NULL;
+	}
 }
 
 #define get_item_str2(internal,external)			\
-char*								\
+const char*							\
 proginfo::external(void)					\
 {								\
 	char *ptr;						\
@@ -79,3 +85,35 @@ get_item_str2(chansign, channel_sign);
 get_item_str2(chanstr, channel_string);
 get_item_str2(programid, program_id);
 get_item_str2(seriesid, series_id);
+
+int
+proginfo::commercial_count(void)
+{
+	return cbl->commbreak_count;
+}
+
+long long
+proginfo::commercial_start(int which)
+{
+	if (which >= cbl->commbreak_count) {
+		return 0;
+	}
+
+	return cbl->commbreak_list[which]->start_mark;
+}
+
+long long
+proginfo::commercial_end(int which)
+{
+	if (which >= cbl->commbreak_count) {
+		return 0;
+	}
+
+	return cbl->commbreak_list[which]->end_mark;
+}
+
+file*
+proginfo::open(void)
+{
+	return new file(prog);
+}

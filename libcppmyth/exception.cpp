@@ -17,30 +17,17 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*
- * cmyth.i - SWIG interface file for libcmyth
- */
-
-%module cmyth
-
-%{
 #include <cppmyth/cppmyth.h>
-%}
 
-%include "exception.i"
+using namespace cmyth;
 
-%exception {
-    try {
-        $action
-    } catch (cmyth::exception& e) {
-        SWIG_exception(SWIG_RuntimeError,const_cast<char*>(e.what()));
-    }
+exception::exception(const char *str)
+{
+	msg = str;
 }
 
-#if !defined(SWIGPHP)
-%include "cstring.i"
-
-%cstring_output_allocate_size(char **file_data, int *bytes_read, free(*$1));
-#endif
-
-%include <cppmyth/cppmyth.h>
+const char*
+exception::what() const throw()
+{
+	return msg;
+}

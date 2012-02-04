@@ -1,3 +1,4 @@
+import shutil
 
 Import('env')
 
@@ -5,18 +6,28 @@ targets = []
 
 cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
+ccflags = env['CCFLAGS']
 
 if env.swig_use_java():
-    java_test = env.Command('test_java.class', 'test_java.java',
-                            [ 'javac -classpath %s -d '
-                              '%s -sourcepath %s %s' % ('../swig', '.',
-                                                        '.',
-                                                        'test_java.java') ],
-                            chdir='test')
+    java_test = env.Java('test_java.class', 'test_java.java',
+                         JAVACLASSPATH='swig')
     targets += java_test
+    if env.GetOption('clean'):
+        try:
+            shutil.rmtree('test_java.class')
+        except:
+            pass
 
-cpp_test = env.Program('test_cpp', 'test_cpp.cc',
+if not env.GetOption('clean'):
+    conf = Configure(env)
+    if conf.CheckLib('ssl'):
+        cpplibs += [ 'ssl' ]
+        ccflags = ccflags + ' -DWITH_SSL'
+    env = conf.Finish()
+
+cpp_test = env.Program('test_cpp', 'test_cpp.cpp',
                        CPPPATH = [ '../include' ],
+                       CCFLAGS = ccflags,
                        LIBS = cpplibs,
                        LIBPATH = libpath)
 

@@ -21,11 +21,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#if defined(WITH_SSL)
+#include <openssl/md5.h>
+#endif
+
 #include <cppmyth/cppmyth.h>
 
 using namespace cmyth;
 
-void test_host(char *host)
+void test_host(const char *host)
 {
 	connection *conn;
 	proglist *list;
@@ -45,7 +49,7 @@ void test_host(char *host)
 		printf("    %s %lld\n",
 		       prog->pathname(),
 		       prog->length());
-		printf("    %s %s %d\n",
+		printf("    %s %s %ld\n",
 		       prog->channel_sign(),
 		       prog->channel_name(),
 		       prog->channel_id());
@@ -53,6 +57,51 @@ void test_host(char *host)
 		delete(prog);
 	}
 
+	delete(list);
+	delete(conn);
+}
+
+void test_file(const char *host)
+{
+	connection *conn;
+	proglist *list;
+	proginfo *prog;
+	file *file;
+	char *buf;
+	int i, rc, len;
+#if defined(WITH_SSL)
+	MD5_CTX ctx;
+	unsigned char digest[MD5_DIGEST_LENGTH];
+#endif
+
+	conn = new connection(host);
+	list = conn->get_proglist();
+	prog = list->get_prog(0);
+	file = prog->open();
+	file->seek(0);	
+#if defined(WITH_SSL)
+	MD5_Init(&ctx);
+#endif
+	for (i=0; i<5; i++) {
+		rc = file->read(&buf, &len);
+		if (rc < 0) {
+			break;
+		}
+#if defined(WITH_SSL)
+		MD5_Update(&ctx, buf, len);
+#endif
+		free(buf);
+	}
+#if defined(WITH_SSL)
+	MD5_Final(digest, &ctx);
+	printf("MD5: ");
+	for (i=0; i<MD5_DIGEST_LENGTH; i++) {
+		printf("%.2x", digest[i]);
+	}
+	printf("\n");
+#endif
+	delete(file);
+	delete(prog);
 	delete(list);
 	delete(conn);
 }
@@ -72,6 +121,8 @@ int main(int argc, char **argv)
 	} catch (exception& e) {
 		printf("Exception: %s\n", e.what());
 	}
+
+	test_file("localhost");
 
 	printf("Refs:  %d\n", ref.refs());
 	printf("Bytes: %d\n", ref.bytes());

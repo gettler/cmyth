@@ -18,6 +18,7 @@
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 #
 
+require 'digest/md5'
 require 'cmyth'
 
 def test_host(host)
@@ -52,6 +53,28 @@ def test_host(host)
   list.release()
 end
 
+def test_file(host)
+  conn = Cmyth::Connection.new(host)
+  list = conn.get_proglist()
+  prog = list.get_prog(0)
+  file = prog.open()
+  file.seek(0)
+  digest = Digest::MD5.new
+  for i in 1..5
+    rc,buf = file.read()
+    if rc < 0
+      puts("Error: file read failed!")
+      break
+    end
+    digest.update(buf)
+  end
+  puts("MD5: #{digest.hexdigest}")
+  file.release()
+  prog.release()
+  list.release()
+  conn.release()
+end
+
 ref = Cmyth::Refmem.new()
 
 begin
@@ -65,6 +88,8 @@ begin
 rescue Exception => e
   puts("Exception: #{e.message}")
 end
+
+test_file("localhost")
 
 refs = ref.refs()
 bytes = ref.bytes()

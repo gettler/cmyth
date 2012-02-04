@@ -29,10 +29,14 @@ extern "C" {
 
 namespace cmyth {
 
+#define DEFAULT_BUFLEN	(128 * 1024)
+#define DEFAULT_PORT	6543
+
 class connection;
 class proginfo;
 class proglist;
 class recording;
+class file;
 
 class exception : public std::exception {
 public:
@@ -60,8 +64,8 @@ public:
 
 class connection {
 public:
-	connection(char *server, unsigned short port = 6543,
-		   unsigned int buflen = 128 * 1024, int tcp_rcvbuf = 4096);
+	connection(const char *server, unsigned short port = DEFAULT_PORT,
+		   unsigned int buflen = DEFAULT_BUFLEN, int tcp_rcvbuf = 4096);
 	~connection();
 
 	int protocol_version(void);
@@ -85,11 +89,12 @@ public:
 
 private:
 	cmyth_proglist_t list;
+	cmyth_conn_t conn;
 };
 
 class proginfo {
 public:
-	proginfo(cmyth_proglist_t list, int which);
+	proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which);
 	~proginfo();
 
 	int port(void);
@@ -97,23 +102,45 @@ public:
 	long long length(void);
 	long channel_id(void);
 
-	char* category(void);
-	char* channel_name(void);
-	char* channel_sign(void);
-	char* channel_string(void);
-	char* description(void);
-	char* host(void);
-	char* pathname(void);
-	char* program_id(void);
-	char* series_id(void);
-	char* stars(void);
-	char* subtitle(void);
-	char* title(void);
+	const char* category(void);
+	const char* channel_name(void);
+	const char* channel_sign(void);
+	const char* channel_string(void);
+	const char* description(void);
+	const char* host(void);
+	const char* pathname(void);
+	const char* program_id(void);
+	const char* series_id(void);
+	const char* stars(void);
+	const char* subtitle(void);
+	const char* title(void);
+
+	void release(void);
+
+	int commercial_count(void);
+	long long commercial_start(int which);
+	long long commercial_end(int which);
+
+	file* open();
+
+private:
+	cmyth_proginfo_t prog;
+	cmyth_commbreaklist_t cbl;
+};
+
+class file {
+public:
+	file(cmyth_proginfo_t prog);
+	~file();
+
+	long long seek(long long offset);
+	long long offset(void);
+	int read(char **file_data, int *bytes_read);
 
 	void release(void);
 
 private:
-	cmyth_proginfo_t prog;
+	cmyth_file_t f;
 };
 
 }

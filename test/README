@@ -1,0 +1,7 @@
+libcmyth test code
+------------------
+
+This directory contains test programs for C++ and the SWIG language bindings
+built upon libcppmyth.  The bash scripts assume that you have installed
+libcmyth into a directory called "install" at the top of the cmyth git
+repository, and that you have a MythTV server running on "localhost".

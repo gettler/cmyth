@@ -3,7 +3,7 @@
 TOP=`git rev-parse --show-toplevel`
 
 INSTDIR=${TOP}/install
-TESTDIR=${TOP}/test
+TESTDIR=${TOP}/test/test_java.class
 LIBDIR=${INSTDIR}/lib
 
 export LD_LIBRARY_PATH=${LIBDIR}

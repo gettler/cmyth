@@ -20,6 +20,12 @@ def find_binary(self, filename):
             return name
     return ''
 
+def binary_exists(self, filename):
+    if self.find_binary(filename) == '':
+        return False
+    else:
+        return True
+
 def run_command(self, cmd):
     command = subprocess.Popen(cmd,
                                shell=True,
@@ -38,7 +44,7 @@ def cmd_not_found(self, arg):
     env.Exit(1)
 
 def swig_use_java(self):
-    if self.find_binary('swig') == False:
+    if not self.binary_exists('swig'):
         return False
     if self.find_binary('javac') and 'JAVA_HOME' in self:
         javapath = self['JAVA_HOME']
@@ -47,19 +53,21 @@ def swig_use_java(self):
     return False
 
 def swig_use_php(self):
-    if self.find_binary('swig') == False:
+    if not self.binary_exists('swig'):
         return False
     if os.path.isfile('/usr/include/php5/main/php.h'):
         return True
     return False
 
 def swig_use_python(self):
-    if self.find_binary('swig') == False:
+    if not self.binary_exists('swig'):
         return False
     return True
 
 def swig_use_ruby(self):
-    if self.find_binary('swig') == False:
+    if not self.binary_exists('swig'):
+        return False
+    if not self.binary_exists('ruby'):
         return False
     rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
                                       '\'puts Config::CONFIG["archdir"]\'')
@@ -74,6 +82,7 @@ env = Environment()
 
 env.AddMethod(cmd_not_found, 'cmd_not_found')
 env.AddMethod(find_binary, 'find_binary')
+env.AddMethod(binary_exists, 'binary_exists')
 env.AddMethod(run_command, 'run_command')
 env.AddMethod(swig_use_java, 'swig_use_java')
 env.AddMethod(swig_use_php, 'swig_use_php')
@@ -82,6 +91,7 @@ env.AddMethod(swig_use_ruby, 'swig_use_ruby')
 
 vars = Variables('cmyth.conf')
 vars.Add('CC', '', 'gcc')
+vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('JAVA_HOME', '', '')
 
@@ -91,9 +101,10 @@ if os.environ.has_key('CROSS'):
     cross = os.environ['CROSS']
     env.Append(CROSS = cross)
     env.Replace(CC = cross + 'gcc')
+    env.Replace(CXX = cross + 'g++')
     env.Replace(LD = cross + 'ld')
 
-env.Append(CFLAGS = '-Werror')
+env.Append(CCFLAGS = '-Werror')
 
 if 'JAVA_HOME' in os.environ:
     env.Append(JAVA_HOME = os.environ['JAVA_HOME'])
@@ -116,9 +127,6 @@ if 'all' in COMMAND_LINE_TARGETS:
 #
 cs = env.find_binary('cscope')
 dox = env.find_binary('doxygen')
-ctg = env.find_binary('ctypesgen.py')
-
-env.Replace(CTYPESGEN = ctg)
 
 #
 # Find the install prefix
