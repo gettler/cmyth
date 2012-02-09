@@ -25,9 +25,10 @@ cmyth.conf
 cmyth/build
 src/cmyth_ffi.py
 swig/*.c
-swig/*.cc
+swig/*.cpp
 swig/*.h
 swig/*.php
 swig/*.py
+swig/*.bundle
 swig/org
 test/test_cpp

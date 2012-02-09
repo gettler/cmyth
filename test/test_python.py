@@ -62,17 +62,22 @@ def test_file(host):
     list.release()
     conn.release()
 
+if len(sys.argv) > 1:
+    host = sys.argv[1]
+else:
+    host = 'localhost'
+
 try:
     test_host('nosuchhost')
 except RuntimeError as e:
     print 'Exception: %s' % e
 
 try:
-    test_host('localhost')
+    test_host(host)
 except RuntimeError as e:
     print 'Exception: %s' % e
 
-test_file('localhost')
+test_file(host)
 
 ref = cmyth.refmem()
 

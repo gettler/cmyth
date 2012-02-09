@@ -55,7 +55,10 @@ def swig_use_java(self):
 def swig_use_php(self):
     if not self.binary_exists('swig'):
         return False
-    if os.path.isfile('/usr/include/php5/main/php.h'):
+    if not self.binary_exists('php') or not self.binary_exists('php-config'):
+        return False
+    rc,phpinc,err = env.run_command('php-config --include-dir')
+    if os.path.isdir(phpinc[:-1]):
         return True
     return False
 
@@ -119,8 +122,10 @@ if 'cscope' in COMMAND_LINE_TARGETS:
 if 'doxygen' in COMMAND_LINE_TARGETS:
 	build_doxygen = True
 if 'all' in COMMAND_LINE_TARGETS:
-	build_doxygen = True
-	build_cscope = True
+        if env.binary_exists('doxygen'):
+            build_doxygen = True
+        if env.binary_exists('cscope'):
+            build_cscope = True
 
 #
 # Check for binaries that might be required
@@ -224,10 +229,11 @@ env.Default(targets)
 #
 if 'all' in COMMAND_LINE_TARGETS:
     env.Clean(all, ['doc', 'cmyth.conf'])
-    env.Clean(all, ['config.log','.sconf_temp','.sconsign.dblite'])
 if 'doxygen' in COMMAND_LINE_TARGETS:
     env.Clean(all, ['doc'])
 
 if not env.GetOption('clean'):
     vars.Save('cmyth.conf', env)
 
+env.Clean('distclean', [ '.sconsign.dblite', '.sconf_temp', 'config.log',
+                         'cmyth.conf' ])

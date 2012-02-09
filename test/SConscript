@@ -20,7 +20,7 @@ if env.swig_use_java():
 
 if not env.GetOption('clean'):
     conf = Configure(env)
-    if conf.CheckLib('ssl'):
+    if conf.CheckLib('ssl', 'MD5_Init'):
         cpplibs += [ 'ssl' ]
         ccflags = ccflags + ' -DWITH_SSL'
     env = conf.Finish()

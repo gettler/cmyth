@@ -75,6 +75,12 @@ def test_file(host)
   conn.release()
 end
 
+if ARGV.length > 0
+  host = ARGV[0]
+else
+  host = "localhost"
+end
+
 ref = Cmyth::Refmem.new()
 
 begin
@@ -84,12 +90,12 @@ rescue Exception => e
 end
 
 begin
-  test_host("localhost")
+  test_host(host)
 rescue Exception => e
   puts("Exception: #{e.message}")
 end
 
-test_file("localhost")
+test_file(host)
 
 refs = ref.refs()
 bytes = ref.bytes()

@@ -25,6 +25,9 @@ conf = Configure(env)
 # Python
 #
 if env.swig_use_python():
+    libs = [ 'cppmyth' ]
+    if sys.platform == 'darwin':
+        libs += [ 'python' ]
     python = env.Command([ 'cmyth_python.cpp', 'cmyth.py' ],
                          interface,
                          [ cmd % ('python', 'cmyth_python.cpp') ])
@@ -32,7 +35,7 @@ if env.swig_use_python():
     shared = env.SharedLibrary('cmyth_python',
                                [ 'cmyth_python.cpp' ],
                                SHLIBSUFFIX = '.so',
-                               LIBS = [ 'cppmyth' ],
+                               LIBS = libs,
                                CPPPATH = [ '../include', '.',
                                            sysconfig.get_python_inc() ],
                                LIBPATH = [ '../libcppmyth' ])
@@ -52,15 +55,35 @@ if env.swig_use_php():
                       interface,
                       [ cmd % ('php', 'cmyth_php.cpp') ])
     targets += php
+    rc,phpinc,err = env.run_command('php-config --include-dir')
+    phpinc = phpinc[:-1]
+    if sys.platform == 'darwin':
+        undefs = [ '_zend_register_resource', '_zend_rsrc_list_get_rsrc_type',
+                   '_zend_wrong_param_count', '_compiler_globals',
+                   '_zend_hash_find', '_gc_remove_zval_from_buffer',
+                   '_zend_register_long_constant', '_zend_get_constant',
+                   '__efree', '__emalloc', '_zend_error', '__zend_list_find',
+                   '_main', '__zend_get_parameters_array_ex',
+                   '_zend_register_list_destructors_ex',
+                   '__zval_copy_ctor_func', '__convert_to_string',
+                   '__zend_hash_add_or_update', '_executor_globals',
+                   '_zval_used_for_init', '_zval_is_true', '__object_init',
+                   '_php_strtolower', '__estrndup', '__object_init_ex',
+                   '_zend_lookup_class', '_convert_to_long',
+                   '_zend_throw_exception' ]
+        linkflags = '-Wl,-flat_namespace,-U,' + ',-U,'.join(undefs)
+    else:
+        linkflags = ''
     shared = env.SharedLibrary('cmyth_php',
                                [ 'cmyth_php.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth' ],
+                               LINKFLAGS = linkflags,
                                CPPPATH = [ '../include', '.',
-                                           '/usr/include/php5',
-                                           '/usr/include/php5/main',
-                                           '/usr/include/php5/TSRM',
-                                           '/usr/include/php5/Zend' ],
+                                           phpinc,
+                                           phpinc + '/main',
+                                           phpinc + '/TSRM',
+                                           phpinc + '/Zend' ],
                                LIBPATH = [ '../libcppmyth' ])
     targets += shared
     env.Install(prefix + '/lib', shared)
@@ -68,7 +91,7 @@ if env.swig_use_php():
     if 'install' in COMMAND_LINE_TARGETS:
         env.Command(prefix + '/lib/php/_cmyth.so', shared,
                     'ln -sf ../libcmyth_php.so %s/%s' % (prefix,
-                                                            'lib/php/cmyth.so'))
+                                                         'lib/php/cmyth.so'))
 
 #
 # Ruby
@@ -76,6 +99,11 @@ if env.swig_use_php():
 if env.swig_use_ruby():
     rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
                                       '\'puts Config::CONFIG["archdir"]\'')
+    libs = [ 'cppmyth' ]
+    suffix = '.so'
+    if sys.platform == 'darwin':
+        libs += [ 'ruby' ]
+        suffix = '.bundle'
     ruby = env.Command([ 'cmyth_ruby.cpp' ],
                        interface,
                        [ cmd % ('ruby', 'cmyth_ruby.cpp') ])
@@ -83,16 +111,16 @@ if env.swig_use_ruby():
     shared = env.SharedLibrary('cmyth_ruby',
                                [ 'cmyth_ruby.cpp' ],
                                SHLIBSUFFIX = '.so',
-                               LIBS = [ 'cppmyth' ],
+                               LIBS = libs,
                                CPPPATH = [ '../include', '.',
                                            rubyarch[:-1] ],
                                LIBPATH = [ '../libcppmyth' ])
     targets += shared
     env.Install(prefix + '/lib', shared)
     if 'install' in COMMAND_LINE_TARGETS:
-        env.Command(prefix + '/lib/ruby/cmyth.so', shared,
-                    'ln -sf ../libcmyth_ruby.so %s/%s' % (prefix,
-                                                       'lib/ruby/cmyth.so'))
+        env.Command(prefix + '/lib/ruby/cmyth' + suffix, shared,
+                    'ln -sf ../libcmyth_ruby.so %s/%s' %
+                    (prefix, 'lib/ruby/cmyth' + suffix))
 
 #
 # Java
@@ -109,8 +137,6 @@ if env.swig_use_java():
                   'SWIGTYPE_p_cmyth_conn_t',
                   'SWIGTYPE_p_cmyth_proglist_t',
                   'SWIGTYPE_p_cmyth_proginfo_t',
-                  'SWIGTYPE_p_int',
-                  'SWIGTYPE_p_p_char',
                   'connection', 'exception', 'proginfo', 'proglist',
                   'refmem', 'file' ]
         src_list = []

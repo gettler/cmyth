@@ -109,6 +109,13 @@ void test_file(const char *host)
 int main(int argc, char **argv)
 {
 	refmem ref;
+	const char *host;
+
+	if (argc > 1) {
+		host = argv[1];
+	} else {
+		host = "localhost";
+	}
 
 	try {
 		test_host("nosuchhost");
@@ -117,12 +124,12 @@ int main(int argc, char **argv)
 	}
 
 	try {
-		test_host("localhost");
+		test_host(host);
 	} catch (exception& e) {
 		printf("Exception: %s\n", e.what());
 	}
 
-	test_file("localhost");
+	test_file(host);
 
 	printf("Refs:  %d\n", ref.refs());
 	printf("Bytes: %d\n", ref.bytes());

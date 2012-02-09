@@ -37,10 +37,45 @@
     }
 }
 
-#if !defined(SWIGPHP)
+#if !defined(SWIGPHP) && !defined(SWIGJAVA)
 %include "cstring.i"
 
 %cstring_output_allocate_size(char **file_data, int *bytes_read, free(*$1));
 #endif
+
+#if defined(SWIGJAVA)
+%typemap(jni) int *bytes_read "jobject"
+%typemap(jtype) int *bytes_read "int"
+%typemap(jstype) int *bytes_read "int"
+%typemap(javain) int *bytes_read ""
+
+%typemap(jni) char **file_data "jobject"
+%typemap(jtype) char **file_data "java.nio.ByteBuffer"
+%typemap(jstype) char **file_data "java.nio.ByteBuffer"
+%typemap(javain) char **file_data "file_data"
+
+%typemap(in) (char **file_data, int *bytes_read) {
+	// file::read() input
+	char **fd = (char**)malloc(sizeof(char*));
+	int *br = (int*)malloc(sizeof(int));
+	$1 = fd;
+	$2 = br;
+}
+
+%typemap(argout) (char **file_data, int *bytes_read) {
+	// file::read() output
+	int *br = (int*)$2;
+	char *buf;
+	if (jresult == 0) {
+		jresult = *$2;
+		buf = (char*)jenv->GetDirectBufferAddress((jbyteArray)$input);
+		//$input = jenv->NewDirectByteBuffer(*$1, *$2);
+		memcpy(buf, *$1, *$2);
+		free(*$1);
+	}
+	free($1);
+	free($2);
+}
+#endif /* SWIGJAVA */
 
 %include <cppmyth/cppmyth.h>

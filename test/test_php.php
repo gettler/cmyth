@@ -48,6 +48,12 @@ function test_host($host) {
 	$list->release();
 }
 
+if ($argc > 1) {
+	$host = $argv[1];
+} else {
+	$host = "localhost";
+}
+
 $ref = new refmem();
 
 try {
@@ -57,7 +63,7 @@ try {
 }
 
 try {
-	test_host("localhost");
+	test_host($host);
 } catch (Exception $e) {
 	echo "Exception: " . $e->getMessage() . "\n";
 }

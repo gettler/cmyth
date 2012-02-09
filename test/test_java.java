@@ -17,8 +17,12 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 //
 
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+
 import org.mvpmc.cmyth.java.refmem;
 
+import org.mvpmc.cmyth.java.cmythConstants;
 import org.mvpmc.cmyth.java.connection;
 import org.mvpmc.cmyth.java.proglist;
 import org.mvpmc.cmyth.java.proginfo;
@@ -63,19 +67,58 @@ public class test_java {
 		proglist list;
 		proginfo prog;
 		file file;
+		ByteBuffer bb;
+		int len;
+		int i;
+		MessageDigest md;
+
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (Exception e) {
+			System.out.format("Exception: %s%n", e.getMessage());
+			return;
+		}
 
 		conn = new connection(host);
 		list = conn.get_proglist();
 		prog = list.get_prog(0);
 		file = prog.open();
 		file.seek(0);
+		for (i=0; i<5; i++) {
+			bb = ByteBuffer.allocateDirect(cmythConstants.DEFAULT_BUFLEN);
+			len = file.read(bb);
+			if (len > 0) {
+				byte b[] = new byte[len];
+				bb.get(b, 0, len);
+				md.update(b, 0, len);
+			}
+		}
+
+		byte[] mdbytes = md.digest();
+
+		StringBuffer sb = new StringBuffer();
+		for (i = 0; i < mdbytes.length; i++) {
+			sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+		}
+
+		System.out.println("MD5: " + sb.toString());
+
+		file.release();
 		prog.release();
 		conn.release();
 		list.release();
 	}
 
 	public static void main(String[] args) {
+		String host;
+
 		System.loadLibrary("cmyth_java");
+
+		if (args.length > 0) {
+			host = args[0];
+		} else {
+			host = "localhost";
+		}
 
 		try {
 			test_host("nosuchhost");
@@ -84,10 +127,12 @@ public class test_java {
 		}
 
 		try {
-			test_host("localhost");
+			test_host(host);
 		} catch (RuntimeException e) {
 			System.out.format("Exception: %s%n", e.getMessage());
 		}
+
+		test_file(host);
 
 		refmem ref = new refmem();
 
