@@ -26,10 +26,11 @@ import cmyth
 import getopt
 import tempfile
 import subprocess
+import re
 
 cmd_encode = 'mencoder %s -o %s -vf dsize=720:480:2,scale=-8:-8,harddup -oac faac -faacopts mpeg=4:object=2:raw:br=128 -of lavf -lavfopts format=mp4 -ovc x264 -sws 9 -x264encopts nocabac:level_idc=30:bframes=0:bitrate=1600:threads=auto:global_header:threads=auto:subq=5:frameref=6:partitions=all:trellis=1:chroma_me:me=umh -really-quiet'
 cmd_chapters = 'MP4Box -chap %s -tmp %s %s'
-cmd_tags = 'mp4tags -c "%s" %s'
+cmd_tags = 'mp4tags -c %s %s'
 
 server = None
 filename = None
@@ -172,7 +173,7 @@ def add_tags(prog):
     chan1 = prog.chansign()
     desc = prog.description()
     comment = '%s: %s - %s %s - %s' % (title, subtitle, chan0, chan1, desc)
-    tags = subprocess.Popen(cmd_tags % (comment, output),
+    tags = subprocess.Popen(cmd_tags % (re.escape(comment), output),
                             shell=True,
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
