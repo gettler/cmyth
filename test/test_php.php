@@ -48,6 +48,26 @@ function test_host($host) {
 	$list->release();
 }
 
+function test_file($host) {
+	$conn = new connection($host);
+	$list = $conn->get_proglist();
+	$prog = $list->get_prog(0);
+	$file = $prog->open();
+	$file->seek(0);
+	$ctx = hash_init('md5');
+	$buf = array();
+	for ($i=0; $i<5; $i++) {
+		$len = $file->read($buf);
+		hash_update($ctx, $buf[0]);
+	}
+	$md5 = hash_final($ctx);
+	echo "MD5: " . $md5 . "\n";
+	$file->release();
+	$prog->release();
+	$conn->release();
+	$list->release();
+}
+
 if ($argc > 1) {
 	$host = $argv[1];
 } else {
@@ -64,6 +84,12 @@ try {
 
 try {
 	test_host($host);
+} catch (Exception $e) {
+	echo "Exception: " . $e->getMessage() . "\n";
+}
+
+try {
+	test_file($host);
 } catch (Exception $e) {
 	echo "Exception: " . $e->getMessage() . "\n";
 }

@@ -27,16 +27,6 @@
 #include <cppmyth/cppmyth.h>
 %}
 
-%include "exception.i"
-
-%exception {
-    try {
-        $action
-    } catch (cmyth::exception& e) {
-        SWIG_exception(SWIG_RuntimeError,const_cast<char*>(e.what()));
-    }
-}
-
 #if !defined(SWIGPHP) && !defined(SWIGJAVA)
 %include "cstring.i"
 
@@ -77,5 +67,28 @@
 	free($2);
 }
 #endif /* SWIGJAVA */
+
+#if defined(SWIGPHP)
+%typemap(in) (char **file_data, int *bytes_read) {
+	// file::read() input
+	char **fd = (char**)malloc(sizeof(char*));
+	int *br = (int*)malloc(sizeof(int));
+	$1 = fd;
+	$2 = br;
+}
+
+%typemap(argout) (char **file_data, int *bytes_read) {
+	// file::read() output
+	int *br = (int*)$2;
+	char *buf;
+	if (result == 0) {
+		result = *$2;
+		ZVAL_LONG(return_value,result);
+		add_index_stringl(*args[1], 0, *$1, result, 1);
+	}
+	free($1);
+	free($2);
+}
+#endif /* SWIGPHP */
 
 %include <cppmyth/cppmyth.h>

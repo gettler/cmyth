@@ -41,6 +41,7 @@ class file;
 class exception : public std::exception {
 public:
 	exception(const char *str = "cmyth exception");
+	~exception() throw();
 	virtual const char* what() const throw();
 
 	void release(void) { }
@@ -65,7 +66,8 @@ public:
 class connection {
 public:
 	connection(const char *server, unsigned short port = DEFAULT_PORT,
-		   unsigned int buflen = DEFAULT_BUFLEN, int tcp_rcvbuf = 4096);
+		   unsigned int buflen = DEFAULT_BUFLEN, int tcp_rcvbuf = 4096)
+		throw(exception);
 	~connection();
 
 	int protocol_version(void);

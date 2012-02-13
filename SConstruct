@@ -48,7 +48,8 @@ def swig_use_java(self):
         return False
     if self.find_binary('javac') and 'JAVA_HOME' in self:
         javapath = self['JAVA_HOME']
-        if os.path.isfile(javapath + '/include/jni.h'):
+        if os.path.isfile(javapath + '/include/jni.h') or \
+                os.path.isfile(javapath + '/Headers/jni.h'):
             return True
     return False
 
@@ -157,6 +158,7 @@ test = SConscript('test/SConscript')
 
 targets = [ cppmyth, cmyth, refmem, src, swig, test ]
 
+env.Depends(swig, [ refmem, cmyth, cppmyth ])
 env.Depends(src, swig)
 env.Depends(test, swig)
 

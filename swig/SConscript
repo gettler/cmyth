@@ -25,7 +25,7 @@ conf = Configure(env)
 # Python
 #
 if env.swig_use_python():
-    libs = [ 'cppmyth' ]
+    libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     if sys.platform == 'darwin':
         libs += [ 'python' ]
     python = env.Command([ 'cmyth_python.cpp', 'cmyth.py' ],
@@ -38,7 +38,9 @@ if env.swig_use_python():
                                LIBS = libs,
                                CPPPATH = [ '../include', '.',
                                            sysconfig.get_python_inc() ],
-                               LIBPATH = [ '../libcppmyth' ])
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
     targets += shared
     env.Install(prefix + '/lib/python', [ 'cmyth.py' ])
     env.Install(prefix + '/lib', shared)
@@ -70,21 +72,24 @@ if env.swig_use_php():
                    '_zval_used_for_init', '_zval_is_true', '__object_init',
                    '_php_strtolower', '__estrndup', '__object_init_ex',
                    '_zend_lookup_class', '_convert_to_long',
-                   '_zend_throw_exception' ]
+                   '_zend_throw_exception',
+                   '_add_index_stringl' ]
         linkflags = '-Wl,-flat_namespace,-U,' + ',-U,'.join(undefs)
     else:
         linkflags = ''
     shared = env.SharedLibrary('cmyth_php',
                                [ 'cmyth_php.cpp' ],
                                SHLIBSUFFIX = '.so',
-                               LIBS = [ 'cppmyth' ],
+                               LIBS = [ 'cppmyth', 'cmyth', 'refmem' ],
                                LINKFLAGS = linkflags,
                                CPPPATH = [ '../include', '.',
                                            phpinc,
                                            phpinc + '/main',
                                            phpinc + '/TSRM',
                                            phpinc + '/Zend' ],
-                               LIBPATH = [ '../libcppmyth' ])
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
     targets += shared
     env.Install(prefix + '/lib', shared)
     env.Install(prefix + '/lib/php', 'cmyth.php')
@@ -99,7 +104,7 @@ if env.swig_use_php():
 if env.swig_use_ruby():
     rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
                                       '\'puts Config::CONFIG["archdir"]\'')
-    libs = [ 'cppmyth' ]
+    libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     suffix = '.so'
     if sys.platform == 'darwin':
         libs += [ 'ruby' ]
@@ -114,7 +119,9 @@ if env.swig_use_ruby():
                                LIBS = libs,
                                CPPPATH = [ '../include', '.',
                                            rubyarch[:-1] ],
-                               LIBPATH = [ '../libcppmyth' ])
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
     targets += shared
     env.Install(prefix + '/lib', shared)
     if 'install' in COMMAND_LINE_TARGETS:
@@ -127,7 +134,8 @@ if env.swig_use_ruby():
 #
 if env.swig_use_java():
     javapath = env['JAVA_HOME']
-    if os.path.isfile(javapath + '/include/jni.h'):
+    if os.path.isfile(javapath + '/include/jni.h') or \
+            os.path.isfile(javapath + '/Headers/jni.h'):
         path = 'org/mvpmc/cmyth/java'
         try:
             os.makedirs(path)
@@ -154,13 +162,27 @@ if env.swig_use_java():
                            [ cmd_java % ('java', 'org.mvpmc.cmyth.java',
                                          'swig/' + path, 'cmyth_java.cpp') ])
         targets += java
+        if sys.platform == 'darwin':
+            suffix = '.jnilib'
+            linkflags = [ 'librefmem/librefmem.a',
+                          'libcmyth/libcmyth.a',
+                          'libcppmyth/libcppmyth.a' ]
+            libs = [ ]
+            libpath = [ ]
+        else:
+            suffix = '.so'
+            linkflags = [ ]
+            libs = [ 'cppmyth', 'cmyth', 'refmem' ]
+            libpath = [ '../libcppmyth', '../libcmyth', '../refmem' ]
         shared = env.SharedLibrary('cmyth_java',
                                    [ 'cmyth_java.cpp' ],
-                                   SHLIBSUFFIX = '.so',
-                                   LIBS = [ 'cppmyth' ],
+                                   SHLIBSUFFIX = suffix,
+                                   LINKFLAGS = linkflags,
+                                   LIBS = libs,
+                                   LIBPATH = libpath,
                                    CPPPATH = [ '../include', '.',
-                                               javapath + '/include' ],
-                                   LIBPATH = [ '../libcppmyth' ])
+                                               javapath + '/include',
+                                               javapath + '/Headers', ])
         targets += shared
         output = env.Command(path + '/cmyth.class',
                              java,

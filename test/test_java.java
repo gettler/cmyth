@@ -132,7 +132,11 @@ public class test_java {
 			System.out.format("Exception: %s%n", e.getMessage());
 		}
 
-		test_file(host);
+		try {
+			test_file(host);
+		} catch (RuntimeException e) {
+			System.out.format("Exception: %s%n", e.getMessage());
+		}
 
 		refmem ref = new refmem();
 

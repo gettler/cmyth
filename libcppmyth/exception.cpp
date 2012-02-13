@@ -26,6 +26,10 @@ exception::exception(const char *str)
 	msg = str;
 }
 
+exception::~exception() throw()
+{
+}
+
 const char*
 exception::what() const throw()
 {

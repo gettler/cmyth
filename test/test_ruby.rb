@@ -85,17 +85,21 @@ ref = Cmyth::Refmem.new()
 
 begin
   test_host("nosuchhost")
-rescue Exception => e
-  puts("Exception: #{e.message}")
+rescue Cmyth::Exception => e
+  puts("Exception: #{e.what}")
 end
 
 begin
   test_host(host)
-rescue Exception => e
-  puts("Exception: #{e.message}")
+rescue Cmyth::Exception => e
+  puts("Exception: #{e.what}")
 end
 
-test_file(host)
+begin
+  test_file(host)
+rescue Cmyth::Exception => e
+  puts("Exception: #{e.what}")
+end
 
 refs = ref.refs()
 bytes = ref.bytes()

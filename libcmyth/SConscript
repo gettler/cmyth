@@ -31,8 +31,10 @@ soname3 = 'libcmyth.so'
 
 if sys.platform == 'darwin':
     linkflags = [ ]
+    suffix = '.dylib'
 else:
     linkflags = [ '-Wl,-soname,' + soname ]
+    suffix = '.so.' + version
 
 static = env.StaticLibrary('cmyth', src,
                            LINKFLAGS = linkflags,
@@ -40,30 +42,32 @@ static = env.StaticLibrary('cmyth', src,
                            CPPPATH = [ '../include', '.' ],
                            LIBPATH = [ '../librefmem' ])
 shared = env.SharedLibrary('cmyth', src,
-                           SHLIBSUFFIX = '.so.' + version,
+                           SHLIBSUFFIX = suffix,
                            LINKFLAGS = linkflags,
                            LIBS = [ 'refmem' ],
                            CPPPATH = [ '../include', '.' ],
                            LIBPATH = [ '../librefmem' ])
 
-link2 = env.Command(soname2, shared,
-                   'ln -sf %s %s' % (soname, soname2), chdir=1)
-link3 = env.Command(soname3, soname2,
-                   'ln -sf %s %s' % (soname2, soname3), chdir=1)
-
 if sys.platform == 'darwin':
-    targets = [ static ]
+    targets = [ static, shared ]
 else:
+    link2 = env.Command(soname2, shared,
+                        'ln -sf %s %s' % (soname, soname2), chdir=1)
+    link3 = env.Command(soname3, soname2,
+                        'ln -sf %s %s' % (soname2, soname3), chdir=1)
+
     targets = [ static, shared, link2, link3 ]
 
-env.Depends(static, link2)
-env.Depends(static, link3)
+    env.Depends(static, link2)
+    env.Depends(static, link3)
 
 prefix = env['PREFIX']
 install = env.Install(prefix + '/lib', targets)
-symlink2 = env.Command(prefix + '/lib/' + soname2, link2,
-                       'ln -sf %s %s' % (soname, prefix + '/lib/' + soname2))
-symlink3 = env.Command(prefix + '/lib/' + soname3, link3,
-                       'ln -sf %s %s' % (soname2, prefix + '/lib/' + soname3))
+
+if sys.platform != 'darwin':
+    symlink2 = env.Command(prefix + '/lib/' + soname2, link2,
+                           'ln -sf %s %s' % (soname, prefix + '/lib/' + soname2))
+    symlink3 = env.Command(prefix + '/lib/' + soname3, link3,
+                           'ln -sf %s %s' % (soname2, prefix + '/lib/' + soname3))
 
 Return('targets')

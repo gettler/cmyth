@@ -22,7 +22,7 @@
 using namespace cmyth;
 
 connection::connection(const char *server, unsigned short port,
-		       unsigned int buflen, int tcp_rcvbuf)
+		       unsigned int buflen, int tcp_rcvbuf) throw(exception)
 {
 	conn = cmyth_conn_connect_ctrl((char*)server, port, buflen, tcp_rcvbuf);
 

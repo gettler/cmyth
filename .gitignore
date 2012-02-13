@@ -9,6 +9,8 @@
 *.pyc
 *.class
 *.jar
+*.jnilib
+*.dylib
 src/mythcat
 src/mythfuse
 src/mythping

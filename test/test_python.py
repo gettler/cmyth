@@ -69,15 +69,18 @@ else:
 
 try:
     test_host('nosuchhost')
-except RuntimeError as e:
-    print 'Exception: %s' % e
+except cmyth.exception as e:
+    print 'Exception: %s' % e.what()
 
 try:
     test_host(host)
-except RuntimeError as e:
-    print 'Exception: %s' % e
+except cmyth.exception as e:
+    print 'Exception: %s' % e.what()
 
-test_file(host)
+try:
+    test_file(host)
+except cmyth.exception as e:
+    print 'Exception: %s' % e.what()
 
 ref = cmyth.refmem()
 

@@ -2,6 +2,10 @@
 
 TOP=`git rev-parse --show-toplevel`
 
+if [ "${TOP}" == "--show-toplevel" ] ; then
+    TOP=`pwd`
+fi
+
 if [ "${PREFIX}" == "" ] ; then
     INSTDIR=${TOP}/install
 else
@@ -15,4 +19,4 @@ export LD_LIBRARY_PATH=${LIBDIR}
 
 cd ${TESTDIR}
 
-java -classpath ${TESTDIR}:${LIBDIR}/cmyth.jar test_java $@
+java -classpath ${TESTDIR}:${LIBDIR}/cmyth.jar -Djava.library.path=${LIBDIR} test_java $@

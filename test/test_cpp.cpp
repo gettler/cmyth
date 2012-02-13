@@ -129,7 +129,11 @@ int main(int argc, char **argv)
 		printf("Exception: %s\n", e.what());
 	}
 
-	test_file(host);
+	try {
+		test_file(host);
+	} catch (exception& e) {
+		printf("Exception: %s\n", e.what());
+	}
 
 	printf("Refs:  %d\n", ref.refs());
 	printf("Bytes: %d\n", ref.bytes());
