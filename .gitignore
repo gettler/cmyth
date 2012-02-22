@@ -4,6 +4,7 @@
 *.a
 *.so
 *.so.*
+*.dylib
 *~
 .sconsign*
 *.pyc
@@ -34,3 +35,4 @@ swig/*.py
 swig/*.bundle
 swig/org
 test/test_cpp
+xcode/build

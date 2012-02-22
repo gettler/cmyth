@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # libcmyth
 #
@@ -7,67 +6,48 @@ import sys
 
 Import('env')
 
+prefix = env['PREFIX']
+
+name = 'cmyth'
+major = 0
+minor = 1
+branch = 0
+
 src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
         'file.c', 'freespace.c', 'keyframe.c',
         'posmap.c', 'proginfo.c', 'proglist.c', 'rec_num.c', 
         'recorder.c', 'ringbuf.c', 'socket.c', 'timestamp.c',
         'livetv.c', 'commbreak.c' ]
 
-if not env.GetOption('clean'):
-    conf = Configure(env)
-    if conf.CheckCHeader('mysql/mysql.h'):
-        conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
-        src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
-    env = conf.Finish()
-else:
+conf = Configure(env)
+if conf.CheckCHeader('mysql/mysql.h'):
+    conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
     src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
+env = conf.Finish()
 
-major = '0'
-minor = '1'
-version = major + '.' + minor
-soname = 'libcmyth.so.' + version
-soname2 = 'libcmyth.so.' + major
-soname3 = 'libcmyth.so'
+linkflags = env.soname(name, major, minor)
 
-if sys.platform == 'darwin':
-    linkflags = [ ]
-    suffix = '.dylib'
-else:
-    linkflags = [ '-Wl,-soname,' + soname ]
-    suffix = '.so.' + version
+static = env.StaticLibrary(name, src,
+                           CPPPATH = [ '../include', '.' ])
 
-static = env.StaticLibrary('cmyth', src,
+shared = env.SharedLibrary(name, src,
+                           SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
                            LINKFLAGS = linkflags,
-                           LIBS = [ 'refmem' ],
-                           CPPPATH = [ '../include', '.' ],
-                           LIBPATH = [ '../librefmem' ])
-shared = env.SharedLibrary('cmyth', src,
-                           SHLIBSUFFIX = suffix,
-                           LINKFLAGS = linkflags,
-                           LIBS = [ 'refmem' ],
-                           CPPPATH = [ '../include', '.' ],
-                           LIBPATH = [ '../librefmem' ])
+                           CPPPATH = [ '../include', '.' ])
 
-if sys.platform == 'darwin':
-    targets = [ static, shared ]
-else:
-    link2 = env.Command(soname2, shared,
-                        'ln -sf %s %s' % (soname, soname2), chdir=1)
-    link3 = env.Command(soname3, soname2,
-                        'ln -sf %s %s' % (soname2, soname3), chdir=1)
+link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
+link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
+link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
 
-    targets = [ static, shared, link2, link3 ]
+targets = [ static, shared, link0, link1, link2 ]
 
-    env.Depends(static, link2)
-    env.Depends(static, link3)
+env.Install(prefix + '/lib', static)
 
-prefix = env['PREFIX']
-install = env.Install(prefix + '/lib', targets)
-
-if sys.platform != 'darwin':
-    symlink2 = env.Command(prefix + '/lib/' + soname2, link2,
-                           'ln -sf %s %s' % (soname, prefix + '/lib/' + soname2))
-    symlink3 = env.Command(prefix + '/lib/' + soname3, link3,
-                           'ln -sf %s %s' % (soname2, prefix + '/lib/' + soname3))
-
+lib0 = env.Install(prefix + '/lib', shared)
+lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                       env.shlibsuffix(major, minor)), lib0)
+lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                       env.shlibsuffix(major)), lib1)
+lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                       env.shlibsuffix()), lib2)
 Return('targets')

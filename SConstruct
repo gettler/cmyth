@@ -79,6 +79,41 @@ def swig_use_ruby(self):
         return True
     return False
 
+def shlibsuffix(self, major=-1, minor=-1, branch=-1):
+    """Create the proper suffix for the shared library on the current OS."""
+    if major == -1:
+        if sys.platform == 'darwin':
+            return '.dylib'
+        else:
+            return '.so'
+    elif minor == -1:
+        if sys.platform == 'darwin':
+            return '-%d.dylib' % (major)
+        else:
+            return '.so.%d' % (major)
+    elif branch == -1:
+        if sys.platform == 'darwin':
+            return '-%d.%d.dylib' % (major, minor)
+        else:
+            return '.so.%d.%d' % (major, minor)
+    else:
+        if sys.platform == 'darwin':
+            return '-%d.%d.%d.dylib' % (major, minor, branch)
+        else:
+            return '.so.%d.%d.%d' % (major, minor, branch)
+
+def soname(self, name, major=0, minor=0, branch=0):
+    """Create the linker shared object argument for gcc for this OS."""
+    if sys.platform == 'darwin':
+        return '-Wl,-headerpad_max_install_names,'\
+               '-undefined,dynamic_lookup,-compatibility_version,%d.%d.%d,'\
+               '-current_version,%d.%d.%d,-install_name,lib%s%s' % \
+               (major, minor, branch,
+                major, minor, branch,
+                name, self.shlibsuffix(major, minor, branch))
+    else:
+        return '-Wl,-soname,lib%s.so.%d.%d.%d' % (name, major, minor, branch)
+
 #
 # Initialize the build environment
 #
@@ -92,6 +127,8 @@ env.AddMethod(swig_use_java, 'swig_use_java')
 env.AddMethod(swig_use_php, 'swig_use_php')
 env.AddMethod(swig_use_python, 'swig_use_python')
 env.AddMethod(swig_use_ruby, 'swig_use_ruby')
+env.AddMethod(shlibsuffix, 'shlibsuffix')
+env.AddMethod(soname, 'soname')
 
 vars = Variables('cmyth.conf')
 vars.Add('CC', '', 'gcc')
@@ -101,7 +138,7 @@ vars.Add('JAVA_HOME', '', '')
 
 vars.Update(env)
 
-if os.environ.has_key('CROSS'):
+if 'CROSS' in os.environ:
     cross = os.environ['CROSS']
     env.Append(CROSS = cross)
     env.Replace(CC = cross + 'gcc')
@@ -114,19 +151,25 @@ if 'JAVA_HOME' in os.environ:
     env.Append(JAVA_HOME = os.environ['JAVA_HOME'])
 
 #
+# SCons builders
+#
+builder = Builder(action = "ln -s ${SOURCE.file} ${TARGET.file}", chdir = True)
+env.Append(BUILDERS = {"Symlink" : builder})
+
+#
 # Check the command line targets
 #
 build_cscope = False
 build_doxygen = False
 if 'cscope' in COMMAND_LINE_TARGETS:
-	build_cscope = True
+    build_cscope = True
 if 'doxygen' in COMMAND_LINE_TARGETS:
-	build_doxygen = True
+    build_doxygen = True
 if 'all' in COMMAND_LINE_TARGETS:
-        if env.binary_exists('doxygen'):
-            build_doxygen = True
-        if env.binary_exists('cscope'):
-            build_cscope = True
+    if env.binary_exists('doxygen'):
+        build_doxygen = True
+    if env.binary_exists('cscope'):
+        build_cscope = True
 
 #
 # Check for binaries that might be required
@@ -137,7 +180,7 @@ dox = env.find_binary('doxygen')
 #
 # Find the install prefix
 #
-if os.environ.has_key('PREFIX'):
+if 'PREFIX' in os.environ:
     prefix = os.environ['PREFIX']
 else:
     prefix = '/usr/local'
@@ -159,6 +202,7 @@ test = SConscript('test/SConscript')
 targets = [ cppmyth, cmyth, refmem, src, swig, test ]
 
 env.Depends(swig, [ refmem, cmyth, cppmyth ])
+env.Depends(cppmyth, [ refmem, cmyth ])
 env.Depends(src, swig)
 env.Depends(test, swig)
 
@@ -231,6 +275,8 @@ env.Default(targets)
 #
 if 'all' in COMMAND_LINE_TARGETS:
     env.Clean(all, ['doc', 'cmyth.conf'])
+    env.Clean(all, [ 'config.log','.sconf_temp','.sconsign.dblite',
+                     'xcode/build' ])
 if 'doxygen' in COMMAND_LINE_TARGETS:
     env.Clean(all, ['doc'])
 

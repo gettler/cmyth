@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 # cmyth apps
 #
@@ -12,18 +11,19 @@ prefix = env['PREFIX']
 libs = [ 'cmyth', 'pthread', 'refmem', ]
 cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
+targets = [ ]
 
-if not env.GetOption('clean'):
-    conf = Configure(env)
-    if conf.CheckLib('mysqlclient'):
-        libs += [ 'mysqlclient' ]
-    env = conf.Finish()
-
-mythfuse = env.Program('mythfuse', 'mythfuse.c',
-                       CCFLAGS = env['CCFLAGS'] + ' -D_FILE_OFFSET_BITS=64',
-                       CPPPATH = [ '../include' ],
-                       LIBS = libs + [ 'fuse' ],
-                       LIBPATH = libpath)
+conf = Configure(env)
+if conf.CheckLib('mysqlclient'):
+    libs += [ 'mysqlclient' ]
+if conf.CheckLib('fuse'):
+    mythfuse = env.Program('mythfuse', 'mythfuse.c',
+                           CCFLAGS = env['CCFLAGS'] + ' -D_FILE_OFFSET_BITS=64',
+                           CPPPATH = [ '../include' ],
+                           LIBS = libs + [ 'fuse' ],
+                           LIBPATH = libpath)
+    targets += [ mythfuse ]
+env = conf.Finish()
 
 mythping = env.Program('mythping', 'mythping.c',
                        CPPPATH = [ '../include' ],
@@ -35,17 +35,8 @@ mythcat = env.Program('mythcat', 'mythcat.c',
                       LIBS = libs,
                       LIBPATH = libpath)
 
-targets = [ mythping, mythcat ]
+targets += [ mythping, mythcat ]
 
-if not env.GetOption('clean'):
-    conf = Configure(env)
-    if conf.CheckLib('fuse'):
-        targets += [ mythfuse ]
-    env = conf.Finish()
-else:
-    targets += [ mythfuse ]
-
-prefix = env['PREFIX']
 env.Install(prefix + '/bin', targets)
 env.Install(prefix + '/bin', [ 'mythinfo.py', 'mythplayer.py',
                                'mythtranscode.py' ])
