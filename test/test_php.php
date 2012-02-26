@@ -70,6 +70,32 @@ function test_file($host) {
 	$list->release();
 }
 
+function test_thumbnail($host) {
+	$conn = new connection($host);
+	$list = $conn->get_proglist();
+	$prog = $list->get_prog(0);
+	$file = $prog->open(FILETYPE_THUMBNAIL);
+	$file->seek(0);
+	$ctx = hash_init('md5');
+	$buf = array();
+	$size = 0;
+	while (1) {
+		$len = $file->read($buf);
+		if ($len == 0) {
+			break;
+		}
+		hash_update($ctx, $buf[0]);
+		$size += $len;
+	}
+	echo "Thumbnail image size: " . $size . "\n";
+	$md5 = hash_final($ctx);
+	echo "MD5: " . $md5 . "\n";
+	$file->release();
+	$prog->release();
+	$conn->release();
+	$list->release();
+}
+
 if ($argc > 1) {
 	$host = $argv[1];
 } else {
@@ -92,6 +118,12 @@ try {
 
 try {
 	test_file($host);
+} catch (Exception $e) {
+	echo "Exception: " . $e->getMessage() . "\n";
+}
+
+try {
+	test_thumbnail($host);
 } catch (Exception $e) {
 	echo "Exception: " . $e->getMessage() . "\n";
 }

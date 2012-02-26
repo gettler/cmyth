@@ -17,6 +17,7 @@ LIBDIR=${INSTDIR}/lib
 PHPDIR=${INSTDIR}/lib/php
 
 export LD_LIBRARY_PATH=${LIBDIR}
+export DYLD_LIBRARY_PATH=${LIBDIR}
 
 ARGS="-- $@"
 

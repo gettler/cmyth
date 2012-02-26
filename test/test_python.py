@@ -37,8 +37,8 @@ def test_host(host):
         print '    %s %d' % (prog.pathname(), prog.length())
         print '    %d - %d' % (prog.start(), prog.end())
         print '    %s - %s' % (prog.start_str(), prog.end_str())
-        print '    %s %s %d' % (prog.channel_sign(), prog.channel_name(),
-                              prog.channel_id())
+        print '    %s - %s - %d' % (prog.channel_sign(), prog.channel_name(),
+                                    prog.channel_id())
         print '    %s' % prog.description()
         prog.release()
 
@@ -54,10 +54,31 @@ def test_file(host):
     file.seek(0)
     for i in range(5):
         rc,buf = file.read()
-        if rc < 0:
+        if rc < 0 or len(buf) == 0:
             print 'Error: file read failed!'
             break
         m.update(buf)
+    print 'MD5: %s' % m.hexdigest()
+    file.release()
+    prog.release()
+    list.release()
+    conn.release()
+
+def test_thumbnail(host):
+    conn = cmyth.connection(host)
+    list = conn.get_proglist()
+    prog = list.get_prog(0)
+    file = prog.open(cmyth.FILETYPE_THUMBNAIL)
+    m = hashlib.md5()
+    file.seek(0)
+    size = 0
+    while True:
+        rc,buf = file.read()
+        if rc < 0 or len(buf) == 0:
+            break
+        m.update(buf)
+        size += len(buf)
+    print 'Thumbnail image size: %d' % size
     print 'MD5: %s' % m.hexdigest()
     file.release()
     prog.release()
@@ -81,6 +102,11 @@ except cmyth.exception as e:
 
 try:
     test_file(host)
+except cmyth.exception as e:
+    print 'Exception: %s' % e.what()
+
+try:
+    test_thumbnail(host)
 except cmyth.exception as e:
     print 'Exception: %s' % e.what()
 

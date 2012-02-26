@@ -113,6 +113,54 @@ void test_file(const char *host)
 	delete(conn);
 }
 
+void test_thumbnail(const char *host)
+{
+	connection *conn;
+	proglist *list;
+	proginfo *prog;
+	file *file;
+	char *buf;
+	int i, rc, len, size;
+#if defined(WITH_SSL)
+	MD5_CTX ctx;
+	unsigned char digest[MD5_DIGEST_LENGTH];
+#endif
+
+	conn = new connection(host);
+	list = conn->get_proglist();
+	prog = list->get_prog(0);
+	file = prog->open(FILETYPE_THUMBNAIL);
+	file->seek(0);	
+#if defined(WITH_SSL)
+	MD5_Init(&ctx);
+#endif
+	size = 0;
+	while (1) {
+		rc = file->read(&buf, &len);
+		if ((rc < 0) || (len == 0)) {
+			break;
+		}
+#if defined(WITH_SSL)
+		MD5_Update(&ctx, buf, len);
+#endif
+		size += len;
+		free(buf);
+	}
+	printf("Thumbnail image size: %d\n", size);
+#if defined(WITH_SSL)
+	MD5_Final(digest, &ctx);
+	printf("MD5: ");
+	for (i=0; i<MD5_DIGEST_LENGTH; i++) {
+		printf("%.2x", digest[i]);
+	}
+	printf("\n");
+#endif
+	delete(file);
+	delete(prog);
+	delete(list);
+	delete(conn);
+}
+
 int main(int argc, char **argv)
 {
 	refmem ref;
@@ -138,6 +186,12 @@ int main(int argc, char **argv)
 
 	try {
 		test_file(host);
+	} catch (exception& e) {
+		printf("Exception: %s\n", e.what());
+	}
+
+	try {
+		test_thumbnail(host);
 	} catch (exception& e) {
 		printf("Exception: %s\n", e.what());
 	}

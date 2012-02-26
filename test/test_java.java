@@ -22,6 +22,7 @@ import java.security.MessageDigest;
 
 import org.mvpmc.cmyth.java.refmem;
 
+import org.mvpmc.cmyth.java.filetype_t;
 import org.mvpmc.cmyth.java.cmythConstants;
 import org.mvpmc.cmyth.java.connection;
 import org.mvpmc.cmyth.java.proglist;
@@ -113,6 +114,59 @@ public class test_java {
 		list.release();
 	}
 
+	public static void test_thumbnail(String host) {
+		connection conn;
+		proglist list;
+		proginfo prog;
+		file file;
+		ByteBuffer bb;
+		int len;
+		int i, size;
+		MessageDigest md;
+
+		try {
+			md = MessageDigest.getInstance("MD5");
+		} catch (Exception e) {
+			System.out.format("Exception: %s%n", e.getMessage());
+			return;
+		}
+
+		conn = new connection(host);
+		list = conn.get_proglist();
+		prog = list.get_prog(0);
+		file = prog.open(filetype_t.FILETYPE_THUMBNAIL);
+		file.seek(0);
+		size = 0;
+		while (true) {
+			bb = ByteBuffer.allocateDirect(cmythConstants.DEFAULT_BUFLEN);
+			len = file.read(bb);
+			if (len > 0) {
+				byte b[] = new byte[len];
+				bb.get(b, 0, len);
+				md.update(b, 0, len);
+				size += len;
+			} else {
+				break;
+			}
+		}
+
+		System.out.format("Thumbnail image size: %d%n", size);
+
+		byte[] mdbytes = md.digest();
+
+		StringBuffer sb = new StringBuffer();
+		for (i = 0; i < mdbytes.length; i++) {
+			sb.append(Integer.toString((mdbytes[i] & 0xff) + 0x100, 16).substring(1));
+		}
+
+		System.out.println("MD5: " + sb.toString());
+
+		file.release();
+		prog.release();
+		conn.release();
+		list.release();
+	}
+
 	public static void main(String[] args) {
 		String host;
 
@@ -138,6 +192,12 @@ public class test_java {
 
 		try {
 			test_file(host);
+		} catch (RuntimeException e) {
+			System.out.format("Exception: %s%n", e.getMessage());
+		}
+
+		try {
+			test_thumbnail(host);
 		} catch (RuntimeException e) {
 			System.out.format("Exception: %s%n", e.getMessage());
 		}

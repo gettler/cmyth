@@ -77,6 +77,30 @@ def test_file(host)
   conn.release()
 end
 
+def test_thumbnail(host)
+  conn = Cmyth::Connection.new(host)
+  list = conn.get_proglist()
+  prog = list.get_prog(0)
+  file = prog.open(Cmyth::FILETYPE_THUMBNAIL)
+  file.seek(0)
+  digest = Digest::MD5.new
+  size = 0
+  while true
+    rc,buf = file.read()
+    if rc < 0 or buf.length == 0
+      break
+    end
+    digest.update(buf)
+    size += buf.length
+  end
+  puts("Thumbnail image size: #{size}")
+  puts("MD5: #{digest.hexdigest}")
+  file.release()
+  prog.release()
+  list.release()
+  conn.release()
+end
+
 if ARGV.length > 0
   host = ARGV[0]
 else
@@ -99,6 +123,12 @@ end
 
 begin
   test_file(host)
+rescue Cmyth::Exception => e
+  puts("Exception: #{e.what}")
+end
+
+begin
+  test_thumbnail(host)
 rescue Cmyth::Exception => e
   puts("Exception: #{e.what}")
 end

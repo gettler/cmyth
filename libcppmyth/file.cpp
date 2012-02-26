@@ -37,7 +37,14 @@ file::file(cmyth_proginfo_t prog, filetype_t t)
 	port = cmyth_proginfo_port(prog);
 
 	conn = cmyth_conn_connect_ctrl(host, port, 16 * 1024, 4096);
-	f = cmyth_conn_connect_file(prog, conn, DEFAULT_BUFLEN, DEFAULT_BUFLEN);
+
+	if (type == FILETYPE_RECORDING) {
+		f = cmyth_conn_connect_file(prog, conn,
+					    DEFAULT_BUFLEN, DEFAULT_BUFLEN);
+	} else {
+		f = cmyth_conn_connect_thumbnail(prog, conn,
+						 DEFAULT_BUFLEN, DEFAULT_BUFLEN);
+	}
 
 	ref_release(conn);
 	ref_release(host);
