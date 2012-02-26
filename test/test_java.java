@@ -50,6 +50,10 @@ public class test_java {
 					  prog.title(), prog.subtitle());
 			System.out.format("    %s %d%n",
 					  prog.pathname(), prog.length());
+			System.out.format("    %d - %d%n",
+					  prog.start(), prog.end());
+			System.out.format("    %s - %s%n",
+					  prog.start_str(), prog.end_str());
 			System.out.format("    %s %s %d%n",
 					  prog.channel_sign(),
 					  prog.channel_name(),

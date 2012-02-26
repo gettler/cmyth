@@ -50,4 +50,5 @@ lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
                                        env.shlibsuffix(major)), lib1)
 lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
                                        env.shlibsuffix()), lib2)
+
 Return('targets')

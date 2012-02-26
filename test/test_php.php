@@ -36,6 +36,8 @@ function test_host($host) {
 		$pathname = $prog->pathname();
 		$length = $prog->length();
 		echo "    " . $pathname . " " . $length . "\n";
+		echo "    " . $prog->start() . " - " . $prog->end() . "\n";
+		echo "    " . $prog->start_str() . " - " . $prog->end_str() . "\n";
 		$sign = $prog->channel_sign();
 		$name = $prog->channel_name();
 		$id = $prog->channel_id();

@@ -145,6 +145,7 @@ if env.swig_use_java():
                   'SWIGTYPE_p_cmyth_conn_t',
                   'SWIGTYPE_p_cmyth_proglist_t',
                   'SWIGTYPE_p_cmyth_proginfo_t',
+                  'filetype_t',
                   'connection', 'exception', 'proginfo', 'proglist',
                   'refmem', 'file' ]
         src_list = []

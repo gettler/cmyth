@@ -32,6 +32,11 @@ namespace cmyth {
 #define DEFAULT_BUFLEN	(128 * 1024)
 #define DEFAULT_PORT	6543
 
+typedef enum {
+	FILETYPE_RECORDING = 0,
+	FILETYPE_THUMBNAIL,
+} filetype_t;
+
 class connection;
 class proginfo;
 class proglist;
@@ -100,20 +105,29 @@ public:
 	~proginfo();
 
 	int port(void);
+	int seconds(void);
 
 	long long length(void);
+
 	long channel_id(void);
+	long card_id(void);
+
+	time_t start(void);
+	time_t end(void);
 
 	const char* category(void);
 	const char* channel_name(void);
 	const char* channel_sign(void);
 	const char* channel_string(void);
 	const char* description(void);
+	const char* end_str(void);
 	const char* host(void);
 	const char* pathname(void);
 	const char* program_id(void);
+	const char* recording_group(void);
 	const char* series_id(void);
 	const char* stars(void);
+	const char* start_str(void);
 	const char* subtitle(void);
 	const char* title(void);
 
@@ -123,7 +137,7 @@ public:
 	long long commercial_start(int which);
 	long long commercial_end(int which);
 
-	file* open();
+	file* open(filetype_t type = FILETYPE_RECORDING);
 
 private:
 	cmyth_proginfo_t prog;
@@ -132,7 +146,7 @@ private:
 
 class file {
 public:
-	file(cmyth_proginfo_t prog);
+	file(cmyth_proginfo_t prog, filetype_t t = FILETYPE_RECORDING);
 	~file();
 
 	long long seek(long long offset);
@@ -143,6 +157,7 @@ public:
 
 private:
 	cmyth_file_t f;
+	filetype_t type;
 };
 
 }

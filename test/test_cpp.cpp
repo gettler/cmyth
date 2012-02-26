@@ -34,6 +34,7 @@ void test_host(const char *host)
 	connection *conn;
 	proglist *list;
 	proginfo *prog;
+	const char *start, *end;
 
 	conn = new connection(host);
 
@@ -49,11 +50,17 @@ void test_host(const char *host)
 		printf("    %s %lld\n",
 		       prog->pathname(),
 		       prog->length());
+		printf("    %ld - %ld\n", prog->start(), prog->end());
+		start = prog->start_str();
+		end = prog->end_str();
+		printf("    %s - %s\n", start, end);
 		printf("    %s %s %ld\n",
 		       prog->channel_sign(),
 		       prog->channel_name(),
 		       prog->channel_id());
 		printf("    %s\n", prog->description());
+		ref_release((void*)start);
+		ref_release((void*)end);
 		delete(prog);
 	}
 

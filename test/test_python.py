@@ -35,6 +35,8 @@ def test_host(host):
         prog = list.get_prog(i)
         print '  %s - %s' % (prog.title(), prog.subtitle())
         print '    %s %d' % (prog.pathname(), prog.length())
+        print '    %d - %d' % (prog.start(), prog.end())
+        print '    %s - %s' % (prog.start_str(), prog.end_str())
         print '    %s %s %d' % (prog.channel_sign(), prog.channel_name(),
                               prog.channel_id())
         print '    %s' % prog.description()

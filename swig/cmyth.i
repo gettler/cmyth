@@ -91,4 +91,10 @@
 }
 #endif /* SWIGPHP */
 
+typedef unsigned int time_t;
+
+%typemap(newfree) const char * "ref_release($1);";
+%newobject start_str;
+%newobject end_str;
+
 %include <cppmyth/cppmyth.h>

@@ -25,11 +25,13 @@
 
 using namespace cmyth;
 
-file::file(cmyth_proginfo_t prog)
+file::file(cmyth_proginfo_t prog, filetype_t t)
 {
 	cmyth_conn_t conn;
 	char *host;
 	int port;
+
+	type = t;
 
 	host = cmyth_proginfo_host(prog);
 	port = cmyth_proginfo_port(prog);

@@ -17,6 +17,8 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <string.h>
+
 #include <cppmyth/cppmyth.h>
 
 using namespace cmyth;
@@ -69,8 +71,10 @@ proginfo::external(void)					\
 
 get_item_num(port, int);
 get_item_num(length, long long);
+get_item_num(card_id, long);
 
 get_item_num2(chan_id, channel_id, long);
+get_item_num2(length_sec, seconds, int);
 
 get_item_str(category);
 get_item_str(description);
@@ -85,6 +89,73 @@ get_item_str2(chansign, channel_sign);
 get_item_str2(chanstr, channel_string);
 get_item_str2(programid, program_id);
 get_item_str2(seriesid, series_id);
+get_item_str2(recgroup, recording_group);
+
+time_t
+proginfo::start(void)
+{
+	cmyth_timestamp_t ts;
+	time_t t;
+
+	ts = cmyth_proginfo_start(prog);
+	t = cmyth_timestamp_to_unixtime(ts);
+
+	ref_release(ts);
+
+	return t;
+}
+
+time_t
+proginfo::end(void)
+{
+	cmyth_timestamp_t ts;
+	time_t t;
+
+	ts = cmyth_proginfo_end(prog);
+	t = cmyth_timestamp_to_unixtime(ts);
+
+	ref_release(ts);
+
+	return t;
+}
+
+const char*
+proginfo::start_str(void)
+{
+	cmyth_timestamp_t ts;
+	time_t t;
+	char *str;
+
+	str = (char*)ref_alloc(64);
+
+	ts = cmyth_proginfo_start(prog);
+	t = cmyth_timestamp_to_unixtime(ts);
+	ctime_r(&t, str);
+	str[strlen(str)-1] = '\0';
+
+	ref_release(ts);
+
+	return str;
+}
+
+const char*
+proginfo::end_str(void)
+{
+	cmyth_timestamp_t ts;
+	time_t t;
+	char *str;
+
+	str = (char*)ref_alloc(64);
+
+	ts = cmyth_proginfo_end(prog);
+	t = cmyth_timestamp_to_unixtime(ts);
+	ctime_r(&t, str);
+	str[strlen(str)-1] = '\0';
+
+	ref_release(ts);
+
+	return str;
+}
 
 int
 proginfo::commercial_count(void)
@@ -113,7 +184,7 @@ proginfo::commercial_end(int which)
 }
 
 file*
-proginfo::open(void)
+proginfo::open(filetype_t type)
 {
-	return new file(prog);
+	return new file(prog, type);
 }
