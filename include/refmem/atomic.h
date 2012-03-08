@@ -32,7 +32,13 @@ typedef	volatile int32_t mvp_atomic_t;
 #define __mvp_atomic_increment(x)	OSAtomicIncrement32(x)
 #define __mvp_atomic_decrement(x)	OSAtomicDecrement32(x)
 #else
+
+#if defined ANDROID
+#include <sys/atomics.h>
+typedef	volatile int mvp_atomic_t;
+#else
 typedef	volatile unsigned int mvp_atomic_t;
+#endif
 
 /**
  * Atomically incremente a reference count variable.

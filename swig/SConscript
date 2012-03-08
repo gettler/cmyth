@@ -12,6 +12,7 @@ from distutils import sysconfig
 Import('env')
 
 prefix = env['PREFIX']
+platform = env['PLATFORM']
 
 targets = []
 
@@ -175,16 +176,24 @@ if env.swig_use_java():
             linkflags = [ ]
             libs = [ 'cppmyth', 'cmyth', 'refmem' ]
             libpath = [ '../libcppmyth', '../libcmyth', '../refmem' ]
-        shared = env.SharedLibrary('cmyth_java',
-                                   [ 'cmyth_java.cpp' ],
-                                   SHLIBSUFFIX = suffix,
-                                   LINKFLAGS = linkflags,
-                                   LIBS = libs,
-                                   LIBPATH = libpath,
-                                   CPPPATH = [ '../include', '.',
-                                               javapath + '/include',
-                                               javapath + '/Headers', ])
-        targets += shared
+        if platform == 'android':
+            makefile = env.NDK('cmyth_java', 'cmyth_java.cpp',
+                               LIBS = [ 'cppmyth', 'refmem' ],
+                               LIBDIRS = [ '../libcppmyth', '../librefmem' ],
+                               INCLUDES = [ '../include', '.' ])
+            targets += makefile
+            env.Install(prefix + '/lib', makefile)
+        else:
+            shared = env.SharedLibrary('cmyth_java',
+                                       [ 'cmyth_java.cpp' ],
+                                       SHLIBSUFFIX = suffix,
+                                       LINKFLAGS = linkflags,
+                                       LIBS = libs,
+                                       LIBPATH = libpath,
+                                       CPPPATH = [ '../include', '.',
+                                                   javapath + '/include',
+                                                   javapath + '/Headers', ])
+            targets += shared
         output = env.Command(path + '/cmyth.class',
                              java,
                              [ 'javac -d %s -sourcepath %s %s' % ('.',
@@ -197,7 +206,8 @@ if env.swig_use_java():
                           chdir='swig')
         targets += jar
 
-        env.Install(prefix + '/lib', shared)
+        if not platform == 'android':
+            env.Install(prefix + '/lib', shared)
         env.Install(prefix + '/lib', jar)
 
         if env.GetOption('clean'):

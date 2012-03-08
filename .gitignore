@@ -36,3 +36,5 @@ swig/*.bundle
 swig/org
 test/test_cpp
 xcode/build
+jni
+obj

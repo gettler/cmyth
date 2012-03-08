@@ -6,6 +6,8 @@ In order to build everything, you will require the following:
 	scons		- required to build anything
 	swig		- required to build the various language binding
 	MySQL		- required for MySQL access to MythTV backends
+	javac		- required to build the Java bindings
+	ndk-build	- required to build for Android
 
 The build is controlled with scons, and there are several build targets
 available (the default target will just build the code):
@@ -26,3 +28,7 @@ To cleanup a target:
 To specify an install prefix:
 
 	$ PREFIX=<path> scons install
+
+To build for Android, set BUILD_ANDROID:
+
+	$ BUILD_ANDROID=y scons

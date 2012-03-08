@@ -7,6 +7,7 @@ import sys
 Import('env')
 
 prefix = env['PREFIX']
+platform = env['PLATFORM']
 
 name = 'cmyth'
 major = 0
@@ -19,38 +20,46 @@ src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
         'recorder.c', 'ringbuf.c', 'socket.c', 'timestamp.c',
         'livetv.c', 'commbreak.c' ]
 
-conf = Configure(env)
-if conf.CheckCHeader('mysql/mysql.h'):
-    conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
-    src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
-env = conf.Finish()
+if platform == 'android':
+    makefile = env.NDK(name, src,
+                       LIBS = [ 'refmem' ],
+                       LIBDIRS = [ '../librefmem' ],
+                       INCLUDES = [ '../include', '.' ])
+    env.Install(prefix + '/lib', makefile)
+    targets = [ makefile ]
+else:
+    conf = Configure(env)
+    if conf.CheckCHeader('mysql/mysql.h'):
+        conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
+        src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
+    env = conf.Finish()
 
-linkflags = env.soname(name, major, minor, branch)
+    linkflags = env.soname(name, major, minor, branch)
 
-static = env.StaticLibrary(name, src,
-                           LIBS = [],
-                           CPPPATH = [ '../include', '.' ])
+    static = env.StaticLibrary(name, src,
+                               LIBS = [],
+                               CPPPATH = [ '../include', '.' ])
 
-shared = env.SharedLibrary(name, src,
-                           SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
-                           LINKFLAGS = linkflags,
-                           LIBS = [],
-                           CPPPATH = [ '../include', '.' ])
+    shared = env.SharedLibrary(name, src,
+                               SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
+                               LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
+                               LIBS = [],
+                               CPPPATH = [ '../include', '.' ])
 
-link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
-link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
-link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
+    link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
+    link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
+    link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
 
-targets = [ static, shared, link0, link1, link2 ]
+    targets = [ static, shared, link0, link1, link2 ]
 
-env.Install(prefix + '/lib', static)
+    env.Install(prefix + '/lib', static)
 
-lib0 = env.Install(prefix + '/lib', shared)
-lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix(major, minor)), lib0)
-lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix(major)), lib1)
-lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix()), lib2)
+    lib0 = env.Install(prefix + '/lib', shared)
+    lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix(major, minor)), lib0)
+    lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix(major)), lib1)
+    lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix()), lib2)
 
 Return('targets')

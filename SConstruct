@@ -46,14 +46,18 @@ def cmd_not_found(self, arg):
 def swig_use_java(self):
     if not self.binary_exists('swig'):
         return False
-    if self.find_binary('javac') and 'JAVA_HOME' in self:
-        javapath = self['JAVA_HOME']
-        if os.path.isfile(javapath + '/include/jni.h') or \
-                os.path.isfile(javapath + '/Headers/jni.h'):
-            return True
+    if self.find_binary('javac'):
+        dirs = [ '/usr/lib/jvm/default-java',
+                 '/System/Library/Frameworks/JavaVM.framework' ]
+        for dir in dirs:
+            if os.path.isdir(dir):
+                env['JAVA_HOME'] = dir
+                return True
     return False
 
 def swig_use_php(self):
+    if env['PLATFORM'] == 'android':
+        return False
     if not self.binary_exists('swig'):
         return False
     if not self.binary_exists('php') or not self.binary_exists('php-config'):
@@ -64,11 +68,15 @@ def swig_use_php(self):
     return False
 
 def swig_use_python(self):
+    if env['PLATFORM'] == 'android':
+        return False
     if not self.binary_exists('swig'):
         return False
     return True
 
 def swig_use_ruby(self):
+    if env['PLATFORM'] == 'android':
+        return False
     if not self.binary_exists('swig'):
         return False
     if not self.binary_exists('ruby'):
@@ -82,29 +90,29 @@ def swig_use_ruby(self):
 def shlibsuffix(self, major=-1, minor=-1, branch=-1):
     """Create the proper suffix for the shared library on the current OS."""
     if major == -1:
-        if sys.platform == 'darwin':
+        if env['PLATFORM'] == 'darwin':
             return '.dylib'
         else:
             return '.so'
     elif minor == -1:
-        if sys.platform == 'darwin':
+        if env['PLATFORM'] == 'darwin':
             return '-%d.dylib' % (major)
         else:
             return '.so.%d' % (major)
     elif branch == -1:
-        if sys.platform == 'darwin':
+        if env['PLATFORM'] == 'darwin':
             return '-%d.%d.dylib' % (major, minor)
         else:
             return '.so.%d.%d' % (major, minor)
     else:
-        if sys.platform == 'darwin':
+        if env['PLATFORM'] == 'darwin':
             return '-%d.%d.%d.dylib' % (major, minor, branch)
         else:
             return '.so.%d.%d.%d' % (major, minor, branch)
 
 def soname(self, name, major=0, minor=0, branch=0):
     """Create the linker shared object argument for gcc for this OS."""
-    if sys.platform == 'darwin':
+    if env['PLATFORM'] == 'darwin':
         return '-Wl,-headerpad_max_install_names,'\
                '-undefined,dynamic_lookup,-compatibility_version,%d.%d.%d,'\
                '-current_version,%d.%d.%d,-install_name,lib%s%s' % \
@@ -130,13 +138,24 @@ env.AddMethod(swig_use_ruby, 'swig_use_ruby')
 env.AddMethod(shlibsuffix, 'shlibsuffix')
 env.AddMethod(soname, 'soname')
 
+#
+# Save the build configuration.
+#
 vars = Variables('cmyth.conf')
 vars.Add('CC', '', 'gcc')
 vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
-vars.Add('JAVA_HOME', '', '')
-
+vars.Add('CROSS', '', '')
+vars.Add('CCFLAGS', '', '-Werror')
+vars.Add('LDFLAGS', '', '')
+vars.Add('PLATFORM', '', sys.platform)
 vars.Update(env)
+
+#
+# Override the build settings with environment variables.
+#
+if 'BUILD_ANDROID' in os.environ:
+    env.Replace(PLATFORM = 'android')
 
 if 'CROSS' in os.environ:
     cross = os.environ['CROSS']
@@ -145,16 +164,15 @@ if 'CROSS' in os.environ:
     env.Replace(CXX = cross + 'g++')
     env.Replace(LD = cross + 'ld')
 
-env.Append(CCFLAGS = '-Werror')
-
-if 'JAVA_HOME' in os.environ:
-    env.Append(JAVA_HOME = os.environ['JAVA_HOME'])
-
 #
 # SCons builders
 #
 builder = Builder(action = "ln -s ${SOURCE.file} ${TARGET.file}", chdir = True)
 env.Append(BUILDERS = {"Symlink" : builder})
+
+if env['PLATFORM'] == 'android':
+    ndk_tool = Tool('android_ndk', toolpath = [ 'scons' ])
+    ndk_tool(env)
 
 #
 # Check the command line targets
@@ -195,16 +213,20 @@ Export('env')
 cmyth = SConscript('libcmyth/SConscript')
 cppmyth = SConscript('libcppmyth/SConscript')
 refmem = SConscript('librefmem/SConscript')
-src = SConscript('src/SConscript')
 swig = SConscript('swig/SConscript')
-test = SConscript('test/SConscript')
 
-targets = [ cppmyth, cmyth, refmem, src, swig, test ]
+targets = [ cppmyth, cmyth, refmem, swig ]
+
+if not env['PLATFORM'] == 'android':
+    src = SConscript('src/SConscript')
+    test = SConscript('test/SConscript')
+    targets += [ src, test ]
+    env.Depends(src, swig)
+    env.Depends(test, swig)
 
 env.Depends(swig, [ refmem, cmyth, cppmyth ])
+env.Depends(cmyth, [ refmem ])
 env.Depends(cppmyth, [ refmem, cmyth ])
-env.Depends(src, swig)
-env.Depends(test, swig)
 
 #
 # install targets

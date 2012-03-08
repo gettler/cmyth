@@ -7,6 +7,7 @@ import sys
 Import('env')
 
 prefix = env['PREFIX']
+platform = env['PLATFORM']
 
 name = 'cppmyth'
 major = 0
@@ -16,29 +17,37 @@ branch = 0
 src = [ 'connection.cpp', 'proginfo.cpp', 'proglist.cpp', 'refmem.cpp',
         'file.cpp', 'exception.cpp' ]
 
-linkflags = env.soname(name, major, minor)
+if platform == 'android':
+    makefile = env.NDK(name, src,
+                       LIBS = [ 'refmem', 'cmyth' ],
+                       LIBDIRS = [ '../librefmem', '../libcmyth' ],
+                       INCLUDES = [ '../include', '.' ])
+    env.Install(prefix + '/lib', makefile)
+    targets = [ makefile ]
+else:
+    linkflags = env.soname(name, major, minor)
 
-static = env.StaticLibrary('cppmyth', src,
-                           CPPPATH = [ '../include', '.' ])
-shared = env.SharedLibrary('cppmyth', src,
-                           SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
-                           LINKFLAGS = linkflags,
-                           CPPPATH = [ '../include', '.' ])
+    static = env.StaticLibrary('cppmyth', src,
+                               CPPPATH = [ '../include', '.' ])
+    shared = env.SharedLibrary('cppmyth', src,
+                               SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
+                               LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
+                               CPPPATH = [ '../include', '.' ])
 
-link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
-link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
-link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
+    link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
+    link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
+    link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
 
-targets = [ static, shared, link0, link1, link2 ]
+    targets = [ static, shared, link0, link1, link2 ]
 
-env.Install(prefix + '/lib', static)
+    env.Install(prefix + '/lib', static)
 
-lib0 = env.Install(prefix + '/lib', shared)
-lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix(major, minor)), lib0)
-lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix(major)), lib1)
-lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                       env.shlibsuffix()), lib2)
+    lib0 = env.Install(prefix + '/lib', shared)
+    lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix(major, minor)), lib0)
+    lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix(major)), lib1)
+    lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
+                                           env.shlibsuffix()), lib2)
 
 Return('targets')
