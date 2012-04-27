@@ -43,25 +43,46 @@ void test_host(const char *host)
 	list = conn->get_proglist();
 
 	printf("Recording count: %d\n", list->get_count());
+	printf("Storage space total: %lld  used: %lld\n",
+	       conn->storage_space_total(), conn->storage_space_used());
 
 	for (int i=0; i<list->get_count(); i++) {
+		const char *title, *subtitle, *description;
+		const char *pathname, *chansign, *channame;
+
 		prog = list->get_prog(i);
-		printf("  %s - %s\n", prog->title(), prog->subtitle());
-		printf("    %s %lld\n",
-		       prog->pathname(),
-		       prog->length());
+
+		title = prog->title();
+		subtitle = prog->subtitle();
+		description = prog->description();
+		pathname = prog->pathname();
+		chansign = prog->channel_sign();
+		channame = prog->channel_name();
+
+		printf("  %s - %s\n", title, subtitle);
+		printf("    %s %lld\n", pathname, prog->length());
 		printf("    %ld - %ld\n", prog->start(), prog->end());
 		start = prog->start_str();
 		end = prog->end_str();
 		printf("    %s - %s\n", start, end);
 		printf("    %s %s %ld\n",
-		       prog->channel_sign(),
-		       prog->channel_name(),
-		       prog->channel_id());
-		printf("    %s\n", prog->description());
+		       chansign, channame, prog->channel_id());
+		printf("    %s\n", description);
+
 		ref_release((void*)start);
 		ref_release((void*)end);
+		ref_release((void*)title);
+		ref_release((void*)subtitle);
+		ref_release((void*)description);
+		ref_release((void*)pathname);
+		ref_release((void*)chansign);
+		ref_release((void*)channame);
+
 		delete(prog);
+	}
+
+	if (conn->hung()) {
+		printf("Connection is hung!\n");
 	}
 
 	delete(list);

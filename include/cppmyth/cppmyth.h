@@ -23,6 +23,7 @@
 extern "C" {
 #include <cmyth/cmyth.h>
 #include <refmem/refmem.h>
+#include <pthread.h>
 }
 
 #include <exception>
@@ -78,10 +79,18 @@ public:
 	int protocol_version(void);
 	proglist* get_proglist(void);
 
+	long long storage_space_total(void);
+	long long storage_space_used(void);
+
+	bool hung(void);
+
 	void release(void);
+
+	void _watchdog(void);
 
 private:
 	cmyth_conn_t conn;
+	pthread_t wd_thread;
 };
 
 class proglist {
@@ -104,6 +113,8 @@ public:
 	proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which);
 	~proginfo();
 
+	bool equals(class proginfo *other);
+
 	int port(void);
 	int seconds(void);
 
@@ -114,6 +125,7 @@ public:
 
 	time_t start(void);
 	time_t end(void);
+	time_t original_airdate(void);
 
 	const char* category(void);
 	const char* channel_name(void);
@@ -139,6 +151,8 @@ public:
 
 	file* open(filetype_t type = FILETYPE_RECORDING);
 
+	cmyth_proginfo_t get_prog(void);
+
 private:
 	cmyth_proginfo_t prog;
 	cmyth_commbreaklist_t cbl;
@@ -148,6 +162,8 @@ class file {
 public:
 	file(cmyth_proginfo_t prog, filetype_t t = FILETYPE_RECORDING);
 	~file();
+
+	long long length(void);
 
 	long long seek(long long offset);
 	long long offset(void);
@@ -159,6 +175,9 @@ private:
 	cmyth_file_t f;
 	filetype_t type;
 };
+
+extern void cmyth_debug_level(int level);
+extern void refmem_debug_level(int level);
 
 }
 

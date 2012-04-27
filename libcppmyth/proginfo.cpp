@@ -54,7 +54,6 @@ proginfo::external(void)					\
 {								\
 	char *ptr;						\
 	ptr = cmyth_proginfo_##internal(prog);			\
-	ref_release(ptr);					\
 	return ptr;						\
 }
 
@@ -112,6 +111,20 @@ proginfo::end(void)
 	time_t t;
 
 	ts = cmyth_proginfo_end(prog);
+	t = cmyth_timestamp_to_unixtime(ts);
+
+	ref_release(ts);
+
+	return t;
+}
+
+time_t
+proginfo::original_airdate(void)
+{
+	cmyth_timestamp_t ts;
+	time_t t;
+
+	ts = cmyth_proginfo_originalairdate(prog);
 	t = cmyth_timestamp_to_unixtime(ts);
 
 	ref_release(ts);
@@ -187,4 +200,29 @@ file*
 proginfo::open(filetype_t type)
 {
 	return new file(prog, type);
+}
+
+bool
+proginfo::equals(class proginfo *other)
+{
+	bool rc;
+	cmyth_proginfo_t other_prog;
+
+	other_prog = other->get_prog();
+
+	if (cmyth_proginfo_compare(prog, other_prog) == 0) {
+		rc = true;
+	} else {
+		rc = false;
+	}
+
+	ref_release(other_prog);
+
+	return rc;
+}
+
+cmyth_proginfo_t
+proginfo::get_prog(void)
+{
+	return (cmyth_proginfo_t)ref_hold(prog);
 }

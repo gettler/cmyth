@@ -28,6 +28,10 @@ function test_host($host) {
 
 	$list = $conn->get_proglist();
 
+	$total = $conn->storage_space_total();
+	$used = $conn->storage_space_used();
+
+	echo "Storage space total: " . $total . "  used: " . $used . "\n";
 	echo "Recording count: " . $list->get_count() . "\n";
 
 	for ($i=0; $i<$list->get_count(); $i++) {
@@ -44,6 +48,10 @@ function test_host($host) {
 		echo "    " . $sign . " " . $name . " " . $id . "\n";
 		echo "    " . $prog->description() . "\n";
 		$prog->release();
+	}
+
+	if ($conn->hung()) {
+		echo "Connection is hung!\n";
 	}
 
 	$conn->release();

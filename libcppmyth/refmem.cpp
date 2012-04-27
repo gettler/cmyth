@@ -54,3 +54,7 @@ refmem::show(void)
 {
 	ref_alloc_show();
 }
+
+void cmyth::refmem_debug_level(int level) {
+	refmem_dbg_level(level);
+}

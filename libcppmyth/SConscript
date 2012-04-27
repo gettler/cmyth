@@ -12,7 +12,7 @@ platform = env['PLATFORM']
 name = 'cppmyth'
 major = 0
 minor = 1
-branch = 0
+branch = 1
 
 src = [ 'connection.cpp', 'proginfo.cpp', 'proglist.cpp', 'refmem.cpp',
         'file.cpp', 'exception.cpp' ]
@@ -25,7 +25,7 @@ if platform == 'android':
     env.Install(prefix + '/lib', makefile)
     targets = [ makefile ]
 else:
-    linkflags = env.soname(name, major, minor)
+    linkflags = env.soname(name, major, minor, branch)
 
     static = env.StaticLibrary('cppmyth', src,
                                CPPPATH = [ '../include', '.' ])

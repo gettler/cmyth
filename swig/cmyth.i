@@ -94,7 +94,34 @@
 typedef unsigned int time_t;
 
 %typemap(newfree) const char * "ref_release($1);";
-%newobject start_str;
+%newobject category;
+%newobject channel_name;
+%newobject channel_sign;
+%newobject channel_string;
+%newobject description;
 %newobject end_str;
+%newobject host;
+%newobject pathname;
+%newobject program_id;
+%newobject recording_group;
+%newobject series_id;
+%newobject stars;
+%newobject start_str;
+%newobject subtitle;
+%newobject title;
+
+#if defined(SWIGPYTHON)
+%typemap(newfree) proginfo * "ref_release($1);";
+%newobject get_prog;
+
+%typemap(newfree) proglist * "ref_release($1);";
+%newobject get_proglist;
+
+%typemap(newfree) file * "ref_release($1);";
+%newobject open;
+
+%typemap(newfree) connection * "ref_release($1);";
+%newobject connection;
+#endif /* SWIGPYTHON */
 
 %include <cppmyth/cppmyth.h>

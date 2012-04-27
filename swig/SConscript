@@ -151,10 +151,10 @@ if env.swig_use_java():
                   'refmem', 'file' ]
         src_list = []
         for i in bases:
-            src_list.append(i + '.java')
+            src_list.append(path + '/' + i + '.java')
         src = ''
         for i in src_list:
-            src = src + ' ' + path + '/' + i
+            src = src + ' ' + i
         classes = ''
         for i in bases:
             classes = classes + path + '/' + i + '.class '

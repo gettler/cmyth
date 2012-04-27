@@ -106,3 +106,9 @@ file::read(char **file_data, int *bytes_read)
 		return -1;
 	}
 }
+
+long long
+file::length(void)
+{
+	return cmyth_file_length(f);
+}

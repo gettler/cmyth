@@ -43,6 +43,9 @@ public class test_java {
 
 		list = conn.get_proglist();
 
+		System.out.format("Storage space total: %d  used: %d\n",
+				  conn.storage_space_total(),
+				  conn.storage_space_used());
 		System.out.format("Recording count: %d%n", list.get_count());
 
 		for (i=0; i<list.get_count(); i++) {
@@ -61,6 +64,10 @@ public class test_java {
 					  prog.channel_id());
 			System.out.format("    %s%n", prog.description());
 			prog.release();
+		}
+
+		if (conn.hung()) {
+			System.out.format("Connection is hung!\n");
 		}
 
 		conn.release();

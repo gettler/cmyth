@@ -31,6 +31,10 @@ def test_host(host):
 
     print 'Recording count: %d' % list.get_count()
 
+    total = conn.storage_space_total()
+    used = conn.storage_space_used()
+    print 'Storage space total: %d  used: %d' % (total, used)
+
     for i in range(list.get_count()):
         prog = list.get_prog(i)
         print '  %s - %s' % (prog.title(), prog.subtitle())
@@ -40,10 +44,9 @@ def test_host(host):
         print '    %s - %s - %d' % (prog.channel_sign(), prog.channel_name(),
                                     prog.channel_id())
         print '    %s' % prog.description()
-        prog.release()
 
-    list.release()
-    conn.release()
+    if conn.hung():
+        print 'Connection is hung!'
 
 def test_file(host):
     conn = cmyth.connection(host)
@@ -59,10 +62,6 @@ def test_file(host):
             break
         m.update(buf)
     print 'MD5: %s' % m.hexdigest()
-    file.release()
-    prog.release()
-    list.release()
-    conn.release()
 
 def test_thumbnail(host):
     conn = cmyth.connection(host)
@@ -80,10 +79,6 @@ def test_thumbnail(host):
         size += len(buf)
     print 'Thumbnail image size: %d' % size
     print 'MD5: %s' % m.hexdigest()
-    file.release()
-    prog.release()
-    list.release()
-    conn.release()
 
 if len(sys.argv) > 1:
     host = sys.argv[1]

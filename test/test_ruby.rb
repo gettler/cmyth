@@ -30,6 +30,10 @@ def test_host(host)
   list = conn.get_proglist()
   count = list.get_count()
 
+  total = conn.storage_space_total()
+  used = conn.storage_space_used()
+
+  puts "Storage space total: #{total}  used: #{used}"
   puts "Recording count: #{count}"
 
   for i in 0..count-1
@@ -49,6 +53,10 @@ def test_host(host)
     puts("    #{channel_sign} #{channel_name} #{channel_id}")
     puts("    #{description}")
     prog.release()
+  end
+
+  if conn.hung()
+    puts("Connection is hung!")
   end
 
   conn.release()
