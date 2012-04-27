@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2006-2010, Sergio Slobodrian
+ *  Copyright (C) 2006-2012, Sergio Slobodrian
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -24,16 +24,18 @@
  *                This allows the watcher to do things like pause, rewind
  *                and so forth on live-tv.
  */
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/select.h>
 #include <cmyth_local.h>
-#include <string.h>
 
-#if 0
+#ifdef _MSC_VER
+static void nullprint(a, ...) { return; }
+#define PRINTF nullprint
+#define TRC  nullprint
+#elif 0
 #define PRINTF(x...) PRINTF(x)
 #define TRC(fmt, args...) PRINTF(fmt, ## args) 
 #else

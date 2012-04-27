@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009, Eric Lund
+ *  Copyright (C) 2004-2012, Eric Lund
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -24,13 +24,11 @@
  *                This allows the watcher to do things like pause, rewind
  *                and so forth on live-tv.
  */
-#include <sys/types.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/socket.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/select.h>
 #include <cmyth_local.h>
 
 /*

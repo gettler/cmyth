@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2009, Eric Lund
+ *  Copyright (C) 2004-2012, Eric Lund
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -17,18 +17,19 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <sys/types.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/time.h>
 #include <mysql/mysql.h>
 #include <cmyth_local.h>
 #include <safe_string.h>
 
-#if 0
+#ifdef _MSC_VER
+static void nullprint(a, ...) { return; }
+#define PRINTF nullprint
+#define TRC  nullprint
+#elif 0
 #define PRINTF(x...) PRINTF(x)
 #define TRC(fmt, args...) PRINTF(fmt, ## args) 
 #else
@@ -997,7 +998,7 @@ cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tune
 }
 
 int
-cmyth_mythtv_remove_previos_recorded(cmyth_database_t db,char *query)
+cmyth_mythtv_remove_previous_recorded(cmyth_database_t db,char *query)
 {
 	MYSQL_RES *res=NULL;
 	char N_query[128];

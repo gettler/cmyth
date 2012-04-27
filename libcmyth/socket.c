@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2010, Eric Lund
+ *  Copyright (C) 2004-2012, Eric Lund
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -21,13 +21,11 @@
  * socket.c - functions to handle low level socket interactions with a
  *            MythTV frontend.  
  */
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
 #include <errno.h>
+#include <sys/select.h>
 #include <cmyth_local.h>
 
 #define __UNSIGNED	"0123456789"
