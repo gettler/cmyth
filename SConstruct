@@ -146,7 +146,7 @@ vars.Add('CC', '', 'gcc')
 vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('CROSS', '', '')
-vars.Add('CCFLAGS', '', '-Werror')
+vars.Add('CCFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
 vars.Update(env)
@@ -156,6 +156,12 @@ vars.Update(env)
 #
 if 'BUILD_ANDROID' in os.environ:
     env.Replace(PLATFORM = 'android')
+
+if 'CC' in os.environ:
+    env.Replace(CC = os.environ['CC'])
+
+if 'LD' in os.environ:
+    env.Replace(CC = os.environ['LD'])
 
 if 'CROSS' in os.environ:
     cross = os.environ['CROSS']

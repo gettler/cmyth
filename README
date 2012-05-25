@@ -32,3 +32,8 @@ To specify an install prefix:
 To build for Android, set BUILD_ANDROID:
 
 	$ BUILD_ANDROID=y scons
+
+To specify a compiler other than gcc:
+
+	$ CC=<compiler> scons
+	$ CROSS=<cross compiler prefix> scons

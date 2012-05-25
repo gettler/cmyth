@@ -23,9 +23,10 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <ctype.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/select.h>
+#include <sys/types.h>
 #include <cmyth_local.h>
 
 #define __UNSIGNED	"0123456789"
@@ -1403,7 +1404,7 @@ cmyth_proginfo_parse_url(cmyth_proginfo_t p)
 	}
 
     out:
-	if (host && port) {
+	if (host && port && path) {
 		char tmp = *(port - 1);
 		*(port - 1) = '\0';
 		if (p->proginfo_host)
@@ -2207,8 +2208,8 @@ cmyth_rcv_proginfo(cmyth_conn_t conn, int *err, cmyth_proginfo_t buf,
 	return total;
 
     fail:
-	cmyth_dbg(CMYTH_DBG_ERROR, "%s: %s() failed (%d)\n",
-		  __FUNCTION__, failed, *err);
+	cmyth_dbg(CMYTH_DBG_ERROR, "%s: %s() failed (%d) (count = %d)\n",
+		  __FUNCTION__, failed, *err, count);
 	return total;
 }
 
@@ -2475,8 +2476,8 @@ cmyth_rcv_chaninfo(cmyth_conn_t conn, int *err, cmyth_proginfo_t buf,
 	return total;
 
     fail:
-	cmyth_dbg(CMYTH_DBG_ERROR, "%s: %s() failed (%d)\n",
-		  __FUNCTION__, failed, *err);
+	cmyth_dbg(CMYTH_DBG_ERROR, "%s: %s() failed (%d) (count = %d)\n",
+		  __FUNCTION__, failed, *err, count);
 	return total;
 }
 
@@ -2805,7 +2806,7 @@ cmyth_rcv_data(cmyth_conn_t conn, int *err, unsigned char *buf, int count)
 		*err = EINVAL;
 		return 0;
 	}
-	err = 0;
+	*err = 0;
 	if (!conn) {
 		cmyth_dbg(CMYTH_DBG_ERROR, "%s: no connection\n",
 			  __FUNCTION__);

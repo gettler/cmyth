@@ -57,7 +57,7 @@ connection::release(void)
 {
 	if (wd_thread) {
 		pthread_cancel(wd_thread);
-		wd_thread = NULL;
+		wd_thread = 0;
 		ref_release(conn);
 	}
 

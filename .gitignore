@@ -5,6 +5,9 @@
 *.so
 *.so.*
 *.dylib
+*.swp
+*.suo
+*.user
 *~
 .sconsign*
 *.pyc
@@ -12,6 +15,7 @@
 *.jar
 *.jnilib
 *.dylib
+._*
 src/mythcat
 src/mythfuse
 src/mythping
@@ -38,3 +42,5 @@ test/test_cpp
 xcode/build
 jni
 obj
+install
+win32/Debug

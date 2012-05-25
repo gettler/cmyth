@@ -141,8 +141,9 @@ void test_thumbnail(const char *host)
 	proginfo *prog;
 	file *file;
 	char *buf;
-	int i, rc, len, size;
+	int rc, len, size;
 #if defined(WITH_SSL)
+	int i;
 	MD5_CTX ctx;
 	unsigned char digest[MD5_DIGEST_LENGTH];
 #endif

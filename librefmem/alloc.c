@@ -50,6 +50,7 @@
 
 #ifdef DEBUG
 #include <stdint.h>
+#include <inttypes.h>
 #include <assert.h>
 #define ALLOC_MAGIC 0xef37a45d
 #define GUARD_MAGIC 0xe3
@@ -490,6 +491,7 @@ ref_release(void *p)
 #ifdef DEBUG
 	guard_t *guard;
 #endif /* DEBUG */
+	int refcount;
 
 	refmem_dbg(REF_DBG_DEBUG, "%s(%p) {\n", __FUNCTION__, p);
 	if (p) {
@@ -506,6 +508,8 @@ ref_release(void *p)
 
 		/* Remove a refcount */
 		mvp_atomic_dec(&total_refcount);
+
+		refcount = ((int)ref->refcount) - 1;
 
 		if (mvp_atomic_dec_and_test(&ref->refcount)) {
 			/*
@@ -529,7 +533,7 @@ ref_release(void *p)
 		        total_bytecount -= ( sizeof(refcounter_t) + ref->length);
 			free(block);
 		}
-		if (ref->refcount < 0)
+		if (refcount < 0)
 			fprintf(stderr, "*** %s(): %p refcount %d ***\n",
 				__FUNCTION__, p, ref->refcount);
 	}

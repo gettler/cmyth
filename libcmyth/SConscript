@@ -28,22 +28,24 @@ if platform == 'android':
     env.Install(prefix + '/lib', makefile)
     targets = [ makefile ]
 else:
+    libs = []
     conf = Configure(env)
     if conf.CheckCHeader('mysql/mysql.h'):
         conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
+        libs += [ 'mysqlclient' ]
         src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
     env = conf.Finish()
 
     linkflags = env.soname(name, major, minor, branch)
 
     static = env.StaticLibrary(name, src,
-                               LIBS = [],
+                               LIBS = libs,
                                CPPPATH = [ '../include', '.' ])
 
     shared = env.SharedLibrary(name, src,
                                SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
                                LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
-                               LIBS = [],
+                               LIBS = libs,
                                CPPPATH = [ '../include', '.' ])
 
     link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)

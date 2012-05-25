@@ -25,14 +25,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#ifdef _MSC_VER
-#include <winsock2.h>
-#else
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#endif
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -43,7 +35,7 @@ static char * cmyth_conn_get_setting_unlocked(cmyth_conn_t conn, const char* hos
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
-	int version;
+	unsigned long version;
 	char token[9]; // 8 characters + the terminating NULL character
 } myth_protomap_t;
 
@@ -51,7 +43,7 @@ static myth_protomap_t protomap[] = {
 	{62, "78B5631E"},
 	{63, "3875641D"},
 	{64, "8675309J"},
-	{0, 0}
+	{0, ""}
 };
 
 /*
@@ -589,6 +581,10 @@ cmyth_conn_connect_pathname(cmyth_proginfo_t prog,  cmyth_conn_t control,
 		goto shut;
 	}
 	count -= r;
+	if (count != 0) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: %d leftover bytes\n",
+			  __FUNCTION__, count);
+	}
 	free(announcement);
 	ref_release(conn);
 	ref_release(myth_host);
@@ -815,7 +811,7 @@ int
 cmyth_conn_check_block(cmyth_conn_t conn, unsigned long size)
 {
 	fd_set check;
-	struct timeval timeout = { .tv_usec = 0, .tv_sec = 0 };
+	struct timeval timeout;
 	int length;
 	int err = 0;
 	unsigned long sent;
@@ -823,6 +819,7 @@ cmyth_conn_check_block(cmyth_conn_t conn, unsigned long size)
 	if (!conn) {
 		return -EINVAL;
 	}
+	timeout.tv_sec = timeout.tv_usec = 0;
 	FD_ZERO(&check);
 	FD_SET(conn->conn_fd, &check);
 	if (select(conn->conn_fd + 1, &check, NULL, NULL, &timeout) < 0) {
