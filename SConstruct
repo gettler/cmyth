@@ -122,6 +122,13 @@ def soname(self, name, major=0, minor=0, branch=0):
     else:
         return '-Wl,-soname,lib%s.so.%d.%d.%d' % (name, major, minor, branch)
 
+def build_shared(self):
+    """Determine if shared objects should be built for this OS."""
+    if sys.platform == 'cygwin':
+        return False
+    else:
+        return True
+
 #
 # Initialize the build environment
 #
@@ -137,6 +144,7 @@ env.AddMethod(swig_use_python, 'swig_use_python')
 env.AddMethod(swig_use_ruby, 'swig_use_ruby')
 env.AddMethod(shlibsuffix, 'shlibsuffix')
 env.AddMethod(soname, 'soname')
+env.AddMethod(build_shared, 'build_shared')
 
 #
 # Save the build configuration.
@@ -162,6 +170,9 @@ if 'CC' in os.environ:
 
 if 'LD' in os.environ:
     env.Replace(CC = os.environ['LD'])
+
+if 'CFLAGS' in os.environ:
+    env.Replace(CC = os.environ['CFLAGS'])
 
 if 'CROSS' in os.environ:
     cross = os.environ['CROSS']
