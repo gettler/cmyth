@@ -44,6 +44,8 @@ def cmd_not_found(self, arg):
     env.Exit(1)
 
 def swig_use_java(self):
+    if env['PLATFORM'] == 'ios':
+        return False
     if not self.binary_exists('swig'):
         return False
     if self.find_binary('javac'):
@@ -56,7 +58,7 @@ def swig_use_java(self):
     return False
 
 def swig_use_php(self):
-    if env['PLATFORM'] == 'android':
+    if env['PLATFORM'] in [ 'android', 'ios']:
         return False
     if not self.binary_exists('swig'):
         return False
@@ -68,14 +70,14 @@ def swig_use_php(self):
     return False
 
 def swig_use_python(self):
-    if env['PLATFORM'] == 'android':
+    if env['PLATFORM'] in [ 'android', 'ios']:
         return False
     if not self.binary_exists('swig'):
         return False
     return True
 
 def swig_use_ruby(self):
-    if env['PLATFORM'] == 'android':
+    if env['PLATFORM'] in [ 'android', 'ios']:
         return False
     if not self.binary_exists('swig'):
         return False
@@ -90,29 +92,29 @@ def swig_use_ruby(self):
 def shlibsuffix(self, major=-1, minor=-1, branch=-1):
     """Create the proper suffix for the shared library on the current OS."""
     if major == -1:
-        if env['PLATFORM'] == 'darwin':
+        if env['PLATFORM'] in [ 'darwin', 'ios' ]:
             return '.dylib'
         else:
             return '.so'
     elif minor == -1:
-        if env['PLATFORM'] == 'darwin':
+        if env['PLATFORM'] in [ 'darwin', 'ios' ]:
             return '-%d.dylib' % (major)
         else:
             return '.so.%d' % (major)
     elif branch == -1:
-        if env['PLATFORM'] == 'darwin':
+        if env['PLATFORM'] in [ 'darwin', 'ios' ]:
             return '-%d.%d.dylib' % (major, minor)
         else:
             return '.so.%d.%d' % (major, minor)
     else:
-        if env['PLATFORM'] == 'darwin':
+        if env['PLATFORM'] in [ 'darwin', 'ios' ]:
             return '-%d.%d.%d.dylib' % (major, minor, branch)
         else:
             return '.so.%d.%d.%d' % (major, minor, branch)
 
 def soname(self, name, major=0, minor=0, branch=0):
     """Create the linker shared object argument for gcc for this OS."""
-    if env['PLATFORM'] == 'darwin':
+    if env['PLATFORM'] in [ 'darwin', 'ios' ]:
         return '-Wl,-headerpad_max_install_names,'\
                '-undefined,dynamic_lookup,-compatibility_version,%d.%d.%d,'\
                '-current_version,%d.%d.%d,-install_name,lib%s%s' % \
@@ -124,7 +126,7 @@ def soname(self, name, major=0, minor=0, branch=0):
 
 def build_shared(self):
     """Determine if shared objects should be built for this OS."""
-    if sys.platform == 'cygwin':
+    if env['PLATFORM'] in [ 'cygwin', 'ios' ]:
         return False
     else:
         return True
@@ -155,6 +157,7 @@ vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('CROSS', '', '')
 vars.Add('CCFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
+vars.Add('CXXFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
 vars.Update(env)
@@ -165,8 +168,14 @@ vars.Update(env)
 if 'BUILD_ANDROID' in os.environ:
     env.Replace(PLATFORM = 'android')
 
+if 'BUILD_IOS' in os.environ:
+    env.Replace(PLATFORM = 'ios')
+
 if 'CC' in os.environ:
     env.Replace(CC = os.environ['CC'])
+
+if 'CXX' in os.environ:
+    env.Replace(CC = os.environ['CXX'])
 
 if 'LD' in os.environ:
     env.Replace(CC = os.environ['LD'])
@@ -180,6 +189,21 @@ if 'CROSS' in os.environ:
     env.Replace(CC = cross + 'gcc')
     env.Replace(CXX = cross + 'g++')
     env.Replace(LD = cross + 'ld')
+
+if env['PLATFORM'] == 'ios':
+    xcrun = 'xcrun -sdk iphoneos'
+    cc = xcrun + ' gcc'
+    cxx = xcrun + ' g++'
+    ld = cxx
+    common = '-isysroot "/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS4.0.sdk" -arch armv6 -D__IPHONE_OS_VERSION_MIN_REQUIRED=__IPHONE_3_0 -miphoneos-version-min=3.0'
+    ldflags = '-lobjc -framework Foundation -framework CoreFoundation -ObjC++ -fobjc-exceptions -fobjc-call-cxx-cdtors %s -multiply_defined suppress' % common
+    cflags = '-DTARGET_IPHONE=1 -O2 -Wall -Werror ' + common
+    env.Replace(CC = cc)
+    env.Replace(CXX = cxx)
+    env.Replace(LD = ld)
+    env.Replace(CFLAGS = cflags)
+    env.Replace(CXXFLAGS = cflags)
+    env.Replace(LDFLAGS = ldflags)
 
 #
 # SCons builders
@@ -234,7 +258,7 @@ swig = SConscript('swig/SConscript')
 
 targets = [ cppmyth, cmyth, refmem, swig ]
 
-if not env['PLATFORM'] == 'android':
+if not env['PLATFORM'] in [ 'android', 'ios']:
     src = SConscript('src/SConscript')
     test = SConscript('test/SConscript')
     targets += [ src, test ]

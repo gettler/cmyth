@@ -8,6 +8,7 @@ In order to build everything, you will require the following:
 	MySQL		- required for MySQL access to MythTV backends
 	javac		- required to build the Java bindings
 	ndk-build	- required to build for Android
+	Xcode & iOS SDK	- required to build for iOS
 
 The build is controlled with scons, and there are several build targets
 available (the default target will just build the code):
@@ -16,6 +17,9 @@ available (the default target will just build the code):
 	doxygen		- build doxygen documentation
 	all		- build the code, cscope, and doxygen
 	install		- build and install the code
+
+If scons is unavailable on your system, you can install the scons-local package
+from scons.org in the cmyth repository.
 
 To build a target:
 
@@ -33,7 +37,33 @@ To build for Android, set BUILD_ANDROID:
 
 	$ BUILD_ANDROID=y scons
 
+To build for iOS, set BUILD_IOS:
+
+	$ BUILD_IOS=y scons
+
 To specify a compiler other than gcc:
 
 	$ CC=<compiler> scons
 	$ CROSS=<cross compiler prefix> scons
+
+
+================================================================================
+
+Supported build environments include:
+
+	  - Linux (gcc, clang)
+	  - Mac OS X (gcc, clang, Xcode, iOS)
+	  - Windows (Visual C++ 2010, cygwin)
+	  - Android (with the Android SDK and NDK)
+
+
+================================================================================
+
+Bindings for languages other than C/C++/Objective-C:
+
+	 - Java
+	 - PHP
+	 - Python
+	 - Ruby
+
+Please see the test directory for examples of using each language binding.
