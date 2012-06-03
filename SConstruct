@@ -43,52 +43,6 @@ def cmd_not_found(self, arg):
     print 'Error: %s not found!' % arg
     env.Exit(1)
 
-def swig_use_java(self):
-    if env['PLATFORM'] == 'ios':
-        return False
-    if not self.binary_exists('swig'):
-        return False
-    if self.find_binary('javac'):
-        dirs = [ '/usr/lib/jvm/default-java',
-                 '/System/Library/Frameworks/JavaVM.framework' ]
-        for dir in dirs:
-            if os.path.isdir(dir):
-                env['JAVA_HOME'] = dir
-                return True
-    return False
-
-def swig_use_php(self):
-    if env['PLATFORM'] in [ 'android', 'ios']:
-        return False
-    if not self.binary_exists('swig'):
-        return False
-    if not self.binary_exists('php') or not self.binary_exists('php-config'):
-        return False
-    rc,phpinc,err = env.run_command('php-config --include-dir')
-    if os.path.isdir(phpinc[:-1]):
-        return True
-    return False
-
-def swig_use_python(self):
-    if env['PLATFORM'] in [ 'android', 'ios']:
-        return False
-    if not self.binary_exists('swig'):
-        return False
-    return True
-
-def swig_use_ruby(self):
-    if env['PLATFORM'] in [ 'android', 'ios']:
-        return False
-    if not self.binary_exists('swig'):
-        return False
-    if not self.binary_exists('ruby'):
-        return False
-    rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
-                                      '\'puts Config::CONFIG["archdir"]\'')
-    if rc == 0 and os.path.isfile(rubyarch[:-1] + '/ruby.h'):
-        return True
-    return False
-
 def shlibsuffix(self, major=-1, minor=-1, branch=-1):
     """Create the proper suffix for the shared library on the current OS."""
     if major == -1:
@@ -140,10 +94,6 @@ env.AddMethod(cmd_not_found, 'cmd_not_found')
 env.AddMethod(find_binary, 'find_binary')
 env.AddMethod(binary_exists, 'binary_exists')
 env.AddMethod(run_command, 'run_command')
-env.AddMethod(swig_use_java, 'swig_use_java')
-env.AddMethod(swig_use_php, 'swig_use_php')
-env.AddMethod(swig_use_python, 'swig_use_python')
-env.AddMethod(swig_use_ruby, 'swig_use_ruby')
 env.AddMethod(shlibsuffix, 'shlibsuffix')
 env.AddMethod(soname, 'soname')
 env.AddMethod(build_shared, 'build_shared')

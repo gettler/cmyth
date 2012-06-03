@@ -9,6 +9,8 @@ import sys
 import shutil
 from distutils import sysconfig
 
+import SCons.Util
+
 Import('env')
 
 prefix = env['PREFIX']
@@ -20,12 +22,71 @@ interface = [ 'cmyth.i', Glob('../include/*.h'), Glob('../include/*/*.h') ]
 cmd = 'swig -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_java = 'swig -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
 
-conf = Configure(env)
+def CheckBinary(context, name):
+    context.Message('Checking for %s ...' % name)
+    ret = SCons.Util.WhereIs(name)
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
+def CheckJava(context):
+    context.Message('Checking for Java headers ...')
+    dirs = [ '/usr/lib/jvm/default-java',
+             '/System/Library/Frameworks/JavaVM.framework' ]
+    ret = None
+    for dir in dirs:
+        if os.path.isdir(dir):
+            ret = dir
+    context.Result(ret)
+    return ret
+
+def CheckPHP(context):
+    context.Message('Checking for PHP headers ...')
+    cmd = context.env['CMD_PHPCONFIG']
+    if cmd:
+        rc,phpinc,err = context.env.run_command('%s --include-dir' % cmd)
+        ret = phpinc[:-1]
+    else:
+        ret = None
+    context.Result(ret)
+    return ret
+
+def CheckRuby(context):
+    context.Message('Checking for Ruby headers ...')
+    cmd = context.env['CMD_RUBY']
+    if cmd:
+        rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
+                                          '\'puts Config::CONFIG["archdir"]\'')
+        ret = rubyarch[:-1]
+    else:
+        ret = None
+    context.Result(ret)
+    return ret
+
+conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
+                                       'CheckJava' : CheckJava,
+                                       'CheckRuby' : CheckRuby,
+                                       'CheckPHP': CheckPHP })
+env['CMD_SWIG'] = conf.CheckBinary('swig')
+if env['CMD_SWIG']:
+    if env['PLATFORM'] != 'ios':
+        env['CMD_JAVAC'] = conf.CheckBinary('javac')
+        env['JAVA_HOME'] = conf.CheckJava()
+    if not env['PLATFORM'] in [ 'android', 'ios' ]:
+        env['CMD_PHP'] = conf.CheckBinary('php')
+        env['CMD_PHPCONFIG'] = conf.CheckBinary('php-config')
+        env['PHP_INCLUDE'] = conf.CheckPHP()
+        env['CMD_PYTHON'] = conf.CheckBinary('python')
+        env['CMD_RUBY'] = conf.CheckBinary('ruby')
+        env['CMD_RUBYARCH'] = conf.CheckRuby()
+env = conf.Finish()
 
 #
 # Python
 #
-if env.swig_use_python():
+if 'CMD_PYTHON' in env:
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     if sys.platform == 'darwin':
         libs += [ 'python' ]
@@ -37,7 +98,8 @@ if env.swig_use_python():
                                [ 'cmyth_python.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = libs,
-                               CCFLAGS = [],
+                               CCFLAGS = '',
+                               CXXFLAGS = '',
                                CPPPATH = [ '../include', '.',
                                            sysconfig.get_python_inc() ],
                                LIBPATH = [ '../libcppmyth',
@@ -54,13 +116,12 @@ if env.swig_use_python():
 #
 # PHP
 #
-if env.swig_use_php():
+if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
     php = env.Command([ 'cmyth_php.cpp', 'php_cmyth.h', 'cmyth.php' ],
                       interface,
                       [ cmd % ('php', 'cmyth_php.cpp') ])
     targets += php
-    rc,phpinc,err = env.run_command('php-config --include-dir')
-    phpinc = phpinc[:-1]
+    phpinc = env['PHP_INCLUDE']
     if sys.platform == 'darwin':
         undefs = [ '_zend_register_resource', '_zend_rsrc_list_get_rsrc_type',
                    '_zend_wrong_param_count', '_compiler_globals',
@@ -83,7 +144,8 @@ if env.swig_use_php():
                                [ 'cmyth_php.cpp' ],
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth', 'cmyth', 'refmem' ],
-                               CCFLAGS = [],
+                               CCFLAGS = '',
+                               CXXFLAGS = '',
                                LINKFLAGS = linkflags,
                                CPPPATH = [ '../include', '.',
                                            phpinc,
@@ -104,9 +166,8 @@ if env.swig_use_php():
 #
 # Ruby
 #
-if env.swig_use_ruby():
-    rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
-                                      '\'puts Config::CONFIG["archdir"]\'')
+if 'CMD_RUBY' in env and 'CMD_RUBYARCH' in env:
+    rubyarch = env['CMD_RUBYARCH']
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     suffix = '.so'
     if sys.platform == 'darwin':
@@ -119,10 +180,11 @@ if env.swig_use_ruby():
     shared = env.SharedLibrary('cmyth_ruby',
                                [ 'cmyth_ruby.cpp' ],
                                SHLIBSUFFIX = '.so',
-                               CCFLAGS = [],
+                               CCFLAGS = '',
+                               CXXFLAGS = '',
                                LIBS = libs,
                                CPPPATH = [ '../include', '.',
-                                           rubyarch[:-1] ],
+                                           rubyarch ],
                                LIBPATH = [ '../libcppmyth',
                                            '../libcmyth',
                                            '../librefmem' ])
@@ -136,7 +198,7 @@ if env.swig_use_ruby():
 #
 # Java
 #
-if env.swig_use_java():
+if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
     javapath = env['JAVA_HOME']
     if os.path.isfile(javapath + '/include/jni.h') or \
             os.path.isfile(javapath + '/Headers/jni.h'):
@@ -190,7 +252,8 @@ if env.swig_use_java():
             shared = env.SharedLibrary('cmyth_java',
                                        [ 'cmyth_java.cpp' ],
                                        SHLIBSUFFIX = suffix,
-                                       CCFLAGS = [],
+                                       CCFLAGS = '',
+                                       CXXFLAGS = '',
                                        LINKFLAGS = linkflags,
                                        LIBS = libs,
                                        LIBPATH = libpath,
@@ -200,9 +263,10 @@ if env.swig_use_java():
             targets += shared
         output = env.Command(path + '/cmyth.class',
                              java,
-                             [ 'javac -d %s -sourcepath %s %s' % ('.',
-                                                                  path,
-                                                                  src) ],
+                             [ '%s -d %s -sourcepath %s %s' % (env['CMD_JAVAC'],
+                                                               '.',
+                                                               path,
+                                                               src) ],
                              chdir='swig')
                                   
         jar = env.Command('cmyth.jar', output,
@@ -219,7 +283,5 @@ if env.swig_use_java():
                 shutil.rmtree('org')
             except:
                 pass
-
-env = conf.Finish()
 
 Return('targets')

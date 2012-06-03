@@ -8,7 +8,7 @@ cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
 ccflags = env['CCFLAGS']
 
-if env.swig_use_java():
+if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
     java_test = env.Java('test_java.class', 'test_java.java',
                          JAVACLASSPATH='swig')
     targets += java_test
