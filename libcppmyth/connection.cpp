@@ -23,6 +23,7 @@
 
 using namespace cmyth;
 
+#if !defined(ANDROID)
 static void*
 wd(void *arg)
 {
@@ -32,6 +33,7 @@ wd(void *arg)
 
 	return NULL;
 }
+#endif /* !ANDROID */
 
 connection::connection(const char *server, unsigned short port,
 		       unsigned int buflen, int tcp_rcvbuf) throw(exception)
@@ -44,7 +46,9 @@ connection::connection(const char *server, unsigned short port,
 
 	conn = (cmyth_conn_t)ref_hold(conn);
 
+#if !defined(ANDROID)
 	pthread_create(&wd_thread, NULL, wd, this);
+#endif
 }
 
 connection::~connection()
@@ -55,11 +59,13 @@ connection::~connection()
 void
 connection::release(void)
 {
+#if !defined(ANDROID)
 	if (wd_thread) {
 		pthread_cancel(wd_thread);
 		wd_thread = 0;
 		ref_release(conn);
 	}
+#endif /* !ANDROID */
 
 	if (conn) {
 		ref_release(conn);
@@ -126,6 +132,7 @@ void cmyth::cmyth_debug_level(int level) {
 void
 connection::_watchdog(void)
 {
+#if !defined(ANDROID)
 	bool hung = false;
 
 	while (1) {
@@ -145,4 +152,5 @@ connection::_watchdog(void)
 
 		sleep(5);
 	}
+#endif /* !ANDROID */
 }
