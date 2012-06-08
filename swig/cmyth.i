@@ -24,10 +24,19 @@
 %module cmyth
 
 %{
+#if defined(SWIGCFFI)
+#include <refmem/refmem.h>
+#include <cmyth/cmyth.h>
+#else
 #include <cppmyth/cppmyth.h>
+#endif
 %}
 
-#if !defined(SWIGPHP) && !defined(SWIGJAVA)
+#if defined(SWIGCFFI)
+%typemap(cout) char* ":pointer";
+#endif
+
+#if !defined(SWIGPHP) && !defined(SWIGJAVA) && !defined(SWIGCFFI)
 %include "cstring.i"
 
 %cstring_output_allocate_size(char **file_data, int *bytes_read, free(*$1));
@@ -124,4 +133,9 @@ typedef unsigned int time_t;
 %newobject connection;
 #endif /* SWIGPYTHON */
 
+#if defined(SWIGCFFI)
+%include <refmem/refmem.h>
+%include <cmyth/cmyth.h>
+#else
 %include <cppmyth/cppmyth.h>
+#endif

@@ -526,7 +526,7 @@ extern int cmyth_recorder_get_recorder_id(cmyth_recorder_t rec);
 
 extern cmyth_livetv_chain_t cmyth_livetv_chain_create(char * chainid);
 
-extern cmyth_file_t cmyth_livetv_get_cur_file(cmyth_recorder_t rec);
+//extern cmyth_file_t cmyth_livetv_get_cur_file(cmyth_recorder_t rec);
 
 extern int cmyth_livetv_chain_switch(cmyth_recorder_t rec, int dir);
 
@@ -555,7 +555,6 @@ extern int cmyth_livetv_request_block(cmyth_recorder_t rec, unsigned long len);
 extern long long cmyth_livetv_seek(cmyth_recorder_t rec,
 						long long offset, int whence);
 
-extern int mythtv_new_livetv(void);
 extern int cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int check_tuner_enabled);
 
 /*
@@ -565,8 +564,6 @@ extern int cmyth_tuner_type_check(cmyth_database_t db, cmyth_recorder_t rec, int
  */
 
 extern cmyth_database_t cmyth_database_init(char *host, char *db_name, char *user, char *pass);
-extern cmyth_chanlist_t myth_tvguide_load_channels(cmyth_database_t db,
-																									 int sort_desc);
 extern int cmyth_database_set_host(cmyth_database_t db, char *host);
 extern int cmyth_database_set_user(cmyth_database_t db, char *user);
 extern int cmyth_database_set_pass(cmyth_database_t db, char *pass);
@@ -631,8 +628,6 @@ extern int cmyth_timestamp_to_display_string(char *str, cmyth_timestamp_t ts,
 
 extern int cmyth_datetime_to_string(char *str, cmyth_timestamp_t ts);
 
-extern cmyth_timestamp_t cmyth_datetime_from_string(char *str);
-
 extern int cmyth_timestamp_compare(cmyth_timestamp_t ts1,
 				   cmyth_timestamp_t ts2);
 
@@ -642,10 +637,6 @@ extern int cmyth_timestamp_compare(cmyth_timestamp_t ts1,
  * -----------------------------------------------------------------
  */
 extern cmyth_keyframe_t cmyth_keyframe_create(void);
-
-extern cmyth_keyframe_t cmyth_keyframe_tcmyth_keyframe_get(
-	unsigned long keynum,
-	unsigned long long pos);
 
 extern char *cmyth_keyframe_string(cmyth_keyframe_t kf);
 

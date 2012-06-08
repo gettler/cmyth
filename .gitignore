@@ -37,6 +37,7 @@ swig/*.h
 swig/*.php
 swig/*.py
 swig/*.bundle
+swig/cmyth.lisp
 swig/org
 test/test_cpp
 xcode/build

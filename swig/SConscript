@@ -20,6 +20,7 @@ targets = []
 
 interface = [ 'cmyth.i', Glob('../include/*.h'), Glob('../include/*/*.h') ]
 cmd = 'swig -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
+cmd_c = 'swig -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_java = 'swig -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
 
 def CheckBinary(context, name):
@@ -65,9 +66,24 @@ def CheckRuby(context):
     context.Result(ret)
     return ret
 
+def CheckLisp(context):
+    context.Message('Checking for Common Lisp ...')
+    lisp = []
+    for l in [ 'sbcl' ]:
+        cmd = SCons.Util.WhereIs(l)
+        if cmd:
+            lisp += [ cmd ]
+    if len(lisp) > 0:
+        ret = lisp[0]
+    else:
+        ret = None
+    context.Result(ret)
+    return ret
+
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
                                        'CheckRuby' : CheckRuby,
+                                       'CheckLisp' : CheckLisp,
                                        'CheckPHP': CheckPHP })
 env['CMD_SWIG'] = conf.CheckBinary('swig')
 if env['CMD_SWIG']:
@@ -81,6 +97,7 @@ if env['CMD_SWIG']:
         env['CMD_PYTHON'] = conf.CheckBinary('python')
         env['CMD_RUBY'] = conf.CheckBinary('ruby')
         env['CMD_RUBYARCH'] = conf.CheckRuby()
+        env['CMD_LISP'] = conf.CheckLisp()
 env = conf.Finish()
 
 #
@@ -159,7 +176,7 @@ if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
     env.Install(prefix + '/lib', shared)
     env.Install(prefix + '/lib/php', 'cmyth.php')
     if 'install' in COMMAND_LINE_TARGETS:
-        env.Command(prefix + '/lib/php/_cmyth.so', shared,
+        env.Command(prefix + '/lib/php/cmyth.so', shared,
                     'ln -sf ../libcmyth_php.so %s/%s' % (prefix,
                                                          'lib/php/cmyth.so'))
 
@@ -283,5 +300,16 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
                 shutil.rmtree('org')
             except:
                 pass
+
+#
+# Common Lisp
+#
+if 'CMD_LISP' in env:
+    lisp = env.Command([ 'cmyth.lisp' ],
+                       interface,
+                       [ cmd_c % ('cffi', 'cmyth.lisp') ])
+    targets += lisp
+    env.InstallAs(prefix + '/lib/lisp/cmyth_cffi.lisp', 'cmyth.lisp')
+    env.InstallAs(prefix + '/lib/lisp/cmyth.lisp', 'cmyth_package.lisp')
 
 Return('targets')
