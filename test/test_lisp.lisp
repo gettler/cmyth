@@ -23,58 +23,54 @@
 (use-package :cmyth)
 
 (defun test-host (host)
-  (let* ((conn (new-connection host))
-	 (pl (get-proglist conn)))
-    (format t "Protocol Version: ~A~%" (protocol-version conn))
-    (format t "Recording Count: ~A~%" (get-count pl))
-    (format t "Storage space total: ~A  used: ~A~%"
-	    (storage-space-total conn) (storage-space-used conn))
-    (loop for i from 0 below (get-count pl) do
-	 (let ((p (get-prog pl i)))
-	   (format t "  ~A - ~A~%" (title p) (subtitle p))
-	   (format t "    ~A~%" (description p))
-	   (release p)))
-    (release pl)
-    (release conn)))
+  (handler-case
+      (with-connection (conn host)
+	(with-progs (progs conn)
+	  (format t "Protocol Version: ~A~%" (protocol-version conn))
+	  (format t "Recording Count: ~A~%" (length progs))
+	  (format t "Storage space total: ~A  used: ~A~%"
+		  (storage-space-total conn) (storage-space-used conn))
+	  (loop for p in progs do
+	       (format t "  ~A - ~A~%" (item p 'title) (item p 'subtitle))
+	       (format t "    ~A - ~A~%" (item p 'pathname) (item p 'bytes))
+	       (format t "    ~A~%" (item p 'description)))))
+    (exception (e)
+      (format t "Exception: ~A~%" (text e)))))
 
 (defun test-file (host)
-  (let* ((conn (new-connection host))
-	 (pl (get-proglist conn))
-	 (p (get-prog pl 0))
-	 (f (open-file p)))
-    (format t "bytes: ~A~%" (bytes f))
-    (seek f 0)
-    (let* ((m (md5:make-md5-state))
-	   (buflen 131072)
-	   (sum)
-	   (b (make-array (* 5 buflen) :element-type '(unsigned-byte 8))))
-      (dotimes (i 5)
-	(let ((len (read-bytes f)))
-	  (dotimes (j len)
-	    (setf (aref b (+ j (* i buflen)))
-		  (cffi:mem-aref (buf f) :unsigned-char j)))))
-;      (with-open-file (stream "file.out" :element-type '(unsigned-byte 8)
-;			      :direction :output :if-exists :supersede)
-;	(write-sequence b stream))
-      (format t "MD5: ")
-      (setf m (md5:update-md5-state m b))
-      (setf sum (md5:finalize-md5-state m))
-      (loop for x across sum do
-	   (format t "~(~X~)" x))
-      (format t "~%"))
-    (release f)
-    (release p)
-    (release pl)
-    (release conn)))
+  (handler-case
+      (with-connection (conn host)
+	(with-proglist (pl conn)
+	  (with-proginfo (p pl 0)
+	    (with-open-program (f p)
+	      (seek f 0)
+	      (let* ((m (md5:make-md5-state))
+		     (buflen (buflen f))
+		     (b (make-array (* 5 buflen)
+				    :element-type '(unsigned-byte 8))))
+		(dotimes (i 5)
+		  (let ((len (read-bytes f)))
+		    (dotimes (j len)
+		      (setf (aref b (+ j (* i buflen)))
+			    (cffi:mem-aref (buf f) :unsigned-char j)))))
+		(format t "MD5: ")
+		(md5:update-md5-state m b)
+		(loop for x across (md5:finalize-md5-state m) do
+		     (format t "~(~X~)" x))
+		(format t "~%"))))))
+    (exception (e)
+      (format t "Exception: ~A~%" (text e)))))
 
 (defvar *host*
   (nth 1
        #+sbcl *posix-argv*
        #+clisp ext:*args*
-       #+ecl (loop for i from 0 below (si:argc) collect (si:argv i))
-       ))
+       #+ecl (loop for i from 0 below (si:argc) collect (si:argv i))))
 
-;(test-host "nosuchhost")
+(if (eq *host* nil)
+    (setf *host* "localhost"))
+
+(test-host "nosuchhost")
 (test-host *host*)
 (test-file *host*)
 
