@@ -106,7 +106,7 @@ vars.Add('CC', '', 'gcc')
 vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('CROSS', '', '')
-vars.Add('CCFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
+vars.Add('CFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
 vars.Add('CXXFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
@@ -131,7 +131,10 @@ if 'LD' in os.environ:
     env.Replace(CC = os.environ['LD'])
 
 if 'CFLAGS' in os.environ:
-    env.Replace(CC = os.environ['CFLAGS'])
+    env.Replace(CFLAGS = os.environ['CFLAGS'])
+
+if 'LDFLAGS' in os.environ:
+    env.Replace(LDFLAGS = os.environ['LDFLAGS'])
 
 if 'CROSS' in os.environ:
     cross = os.environ['CROSS']

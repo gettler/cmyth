@@ -6,7 +6,7 @@ targets = []
 
 cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
-ccflags = env['CCFLAGS']
+ccflags = env['CFLAGS']
 
 if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
     java_test = env.Java('test_java.class', 'test_java.java',

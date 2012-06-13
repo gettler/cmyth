@@ -27,13 +27,14 @@ else:
 
     static = env.StaticLibrary(name, src,
                                LIBS = [],
-                               CCFLAGS = env['CCFLAGS'],
+                               CCFLAGS = env['CFLAGS'],
+                               LINKFLAGS = env['LDFLAGS'],
                                CPPPATH = [ '../include', '.' ])
     shared = env.SharedLibrary(name, src,
                                SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
                                LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
                                LIBS = [],
-                               CCFLAGS = env['CCFLAGS'],
+                               CCFLAGS = env['CFLAGS'],
                                CPPPATH = [ '../include', '.' ])
 
     link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)

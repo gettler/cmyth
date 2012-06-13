@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <sys/types.h>
 #include <cmyth_local.h>
 
@@ -41,9 +42,7 @@
 static void
 cmyth_file_destroy(cmyth_file_t file)
 {
-	int err, count;
-	int r;
-	long c;
+	int err;
 	char msg[256];
 
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s {\n", __FUNCTION__);
@@ -68,18 +67,10 @@ cmyth_file_destroy(cmyth_file_t file)
 			goto fail;
 		}
 
-		if ((count = cmyth_rcv_length(file->file_control)) < 0) {
+		if ((err=cmyth_rcv_okay(file->file_control, "ok")) < 0) {
 			cmyth_dbg(CMYTH_DBG_ERROR,
-				  "%s: cmyth_rcv_length() failed (%d)\n",
-				  __FUNCTION__, count);
-			err = count;
-			goto fail;
-		}
-		if ((r = cmyth_rcv_long(file->file_control,
-					&err, &c, count)) < 0) {
-			cmyth_dbg(CMYTH_DBG_ERROR,
-				  "%s: cmyth_rcv_long() failed (%d)\n",
-				  __FUNCTION__, r);
+				  "%s: cmyth_rcv_okay() failed (%d)\n",
+				  __FUNCTION__, err);
 			goto fail;
 		}
 	    fail:
@@ -422,7 +413,7 @@ cmyth_file_seek(cmyth_file_t file, long long offset, int whence)
 	char msg[128];
 	int err;
 	int count;
-	long long c;
+	int64_t c;
 	long r;
 	long long ret;
 
@@ -434,14 +425,28 @@ cmyth_file_seek(cmyth_file_t file, long long offset, int whence)
 
 	pthread_mutex_lock(&mutex);
 
-	snprintf(msg, sizeof(msg),
-		 "QUERY_FILETRANSFER %ld[]:[]SEEK[]:[]%d[]:[]%d[]:[]%d[]:[]%d[]:[]%d",
-		 file->file_id,
-		 (int32_t)(offset >> 32),
-		 (int32_t)(offset & 0xffffffff),
-		 whence,
-		 (int32_t)(file->file_pos >> 32),
-		 (int32_t)(file->file_pos & 0xffffffff));
+	if (file->file_control->conn_version >= 66) {
+		/*
+		 * Since protocol 66 mythbackend expects to receive a single 64 bit integer rather than
+		 * two 32 bit hi and lo integers.
+		 */
+		snprintf(msg, sizeof(msg),
+			 "QUERY_FILETRANSFER %ld[]:[]SEEK[]:[]%"PRIu64"[]:[]%d[]:[]%"PRIu64,
+			 file->file_id,
+			 (int64_t)offset,
+			 whence,
+			 (int64_t)file->file_pos);
+	}
+	else {
+		snprintf(msg, sizeof(msg),
+			 "QUERY_FILETRANSFER %ld[]:[]SEEK[]:[]%d[]:[]%d[]:[]%d[]:[]%d[]:[]%d",
+			 file->file_id,
+			 (int32_t)(offset >> 32),
+			 (int32_t)(offset & 0xffffffff),
+			 whence,
+			 (int32_t)(file->file_pos >> 32),
+			 (int32_t)(file->file_pos & 0xffffffff));
+	}
 
 	if ((err = cmyth_send_message(file->file_control, msg)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
@@ -458,7 +463,7 @@ cmyth_file_seek(cmyth_file_t file, long long offset, int whence)
 		ret = count;
 		goto out;
 	}
-	if ((r=cmyth_rcv_long_long(file->file_control, &err, &c, count)) < 0) {
+	if ((r=cmyth_rcv_int64(file->file_control, &err, &c, count)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
 			  "%s: cmyth_rcv_long_long() failed (%d)\n",
 			  __FUNCTION__, r);

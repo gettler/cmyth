@@ -12,7 +12,7 @@ platform = env['PLATFORM']
 name = 'cmyth'
 major = 0
 minor = 1
-branch = 2
+branch = 3
 
 src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
         'file.c', 'freespace.c', 'keyframe.c',
@@ -40,6 +40,7 @@ else:
 
     static = env.StaticLibrary(name, src,
                                LIBS = libs,
+                               LINKFLAGS = env['LDFLAGS'],
                                CPPPATH = [ '../include', '.' ])
 
     shared = env.SharedLibrary(name, src,
