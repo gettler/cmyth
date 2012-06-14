@@ -3,6 +3,7 @@
 #
 
 import sys
+import shutil
 
 Import('env')
 
@@ -54,5 +55,12 @@ else:
 
     if env.build_shared():
         targets += [ shared, link0, link1, link2 ]
+
+if env.GetOption('clean'):
+    for i in [ 'libs', 'jni', 'obj' ]:
+        try:
+            shutil.rmtree(i)
+        except:
+            pass
 
 Return('targets')

@@ -296,10 +296,11 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
         env.Install(prefix + '/lib', jar)
 
         if env.GetOption('clean'):
-            try:
-                shutil.rmtree('org')
-            except:
-                pass
+            for i in [ 'org', 'libs', 'jni', 'obj' ]:
+                try:
+                    shutil.rmtree(i)
+                except:
+                    pass
 
 #
 # Common Lisp

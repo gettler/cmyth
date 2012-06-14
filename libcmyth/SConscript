@@ -3,6 +3,7 @@
 #
 
 import sys
+import shutil
 
 Import('env')
 
@@ -67,5 +68,12 @@ else:
                                            env.shlibsuffix(major)), lib1)
     lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
                                            env.shlibsuffix()), lib2)
+
+if env.GetOption('clean'):
+    for i in [ 'libs', 'jni', 'obj' ]:
+        try:
+            shutil.rmtree(i)
+        except:
+            pass
 
 Return('targets')
