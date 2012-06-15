@@ -51,8 +51,8 @@ else:
                                CPPPATH = [ '../include', '.' ])
 
     link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
-    link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), shared)
-    link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), shared)
+    link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), link0)
+    link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), link1)
 
     targets = [ static ]
 

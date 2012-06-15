@@ -280,15 +280,11 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
             targets += shared
         output = env.Command(path + '/cmyth.class',
                              java,
-                             [ '%s -d %s -sourcepath %s %s' % (env['CMD_JAVAC'],
-                                                               '.',
-                                                               path,
-                                                               src) ],
-                             chdir='swig')
+                             [ 'cd swig && %s -d %s -sourcepath %s %s' %
+                               (env['CMD_JAVAC'], '.', path, src) ])
                                   
         jar = env.Command('cmyth.jar', output,
-                          [ 'jar cf cmyth.jar %s' % classes ],
-                          chdir='swig')
+                          [ 'cd swig && jar cf cmyth.jar %s' % classes ])
         targets += jar
 
         if not platform == 'android':
