@@ -17,8 +17,22 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ;;;;
 
-(require 'md5)
-(require 'cffi)
+#+clisp
+(ignore-errors
+  (load (merge-pathnames ".clisprc.lisp" (user-homedir-pathname))))
+
+#-quicklisp (progn
+	      (require 'md5)
+	      (require 'cffi))
+#+quicklisp (progn
+	      (let ((std-out *standard-output*))
+		(setf *standard-output* (make-broadcast-stream))
+		(ql:quickload :cffi)
+		(ql:quickload :md5)
+		(setf *standard-output* std-out)))
+
+#+clisp
+(load (merge-pathnames "cmyth.lisp" (ext:getenv "LISPDIR")))
 
 (use-package :cmyth)
 
@@ -31,9 +45,9 @@
 	  (format t "Storage space total: ~A  used: ~A~%"
 		  (storage-space-total conn) (storage-space-used conn))
 	  (loop for p in progs do
-	       (format t "  ~A - ~A~%" (item p 'title) (item p 'subtitle))
-	       (format t "    ~A - ~A~%" (item p 'pathname) (item p 'bytes))
-	       (format t "    ~A~%" (item p 'description)))))
+	       (format t "  ~{~A~^ - ~}~%" (attr p "title" "subtitle"))
+	       (format t "    ~{~A~^ - ~}~%" (attr p "path-name" "bytes"))
+	       (format t "    ~A~%" (attr p "description")))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
 
@@ -61,18 +75,22 @@
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
 
-(defvar *host*
-  (nth 1
-       #+sbcl *posix-argv*
-       #+clisp ext:*args*
-       #+ecl (loop for i from 0 below (si:argc) collect (si:argv i))))
+(defun main ()
+  (let ((host
+	 (nth 1
+	      #+sbcl *posix-argv*
+	      #+clisp ext:*args*
+	      #+ecl (list "ecl" (si:argv (- (si:argc) 1))))))
 
-(if (eq *host* nil)
-    (setf *host* "localhost"))
+    (if (eq host nil)
+	(setf host "localhost"))
 
-(test-host "nosuchhost")
-(test-host *host*)
-(test-file *host*)
+    (test-host "nosuchhost")
+    (test-host host)
+    (test-file host)
 
-(format t "Refs:  ~A~%" (get-refs))
-(format t "Bytes: ~A~%" (get-bytes))
+    (format t "Refs:  ~A~%" (get-refs))
+    (format t "Bytes: ~A~%" (get-bytes))))
+
+(main)
+;(sb-ext:save-lisp-and-die "test_lisp" :executable t :toplevel 'main)

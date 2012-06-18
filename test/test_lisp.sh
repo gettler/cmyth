@@ -14,12 +14,23 @@ fi
 
 TESTDIR=${TOP}/test
 LIBDIR=${INSTDIR}/lib
-LISPDIR=${LIBDIR}/lisp
+LISPDIR=${LIBDIR}/lisp/
 
 export LD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
 export DYLD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
 
 export LISPDIR
 
-sbcl --noinform --non-interactive --load ${LIBDIR}/lisp/cmyth.lisp --load ${TESTDIR}/test_lisp.lisp $@
+SBCL=`which sbcl`
+CLISP=`which clisp`
+ECL=`which ecl`
 
+if [ "$SBCL" != "" ] ; then
+    sbcl --noinform --non-interactive --load ${LISPDIR}/cmyth.lisp --load ${TESTDIR}/test_lisp.lisp $@
+elif [ "$CLISP" != "" ] ; then
+    clisp -q -q ${TESTDIR}/test_lisp.lisp -- $@
+elif [ "$ECL" != "" ] ; then
+    ecl -q -load ${LISPDIR}/cmyth.lisp -load ${TESTDIR}/test_lisp.lisp -eval "(quit)" -- $@
+else
+    echo "No supported Lisp implementation found!"
+fi

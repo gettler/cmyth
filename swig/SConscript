@@ -69,7 +69,7 @@ def CheckRuby(context):
 def CheckLisp(context):
     context.Message('Checking for Common Lisp ...')
     lisp = []
-    for l in [ 'sbcl' ]:
+    for l in [ 'sbcl', 'clisp', 'ecl' ]:
         cmd = SCons.Util.WhereIs(l)
         if cmd:
             lisp += [ cmd ]
@@ -257,7 +257,7 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
             suffix = '.so'
             linkflags = [ ]
             libs = [ 'cppmyth', 'cmyth', 'refmem' ]
-            libpath = [ '../libcppmyth', '../libcmyth', '../refmem' ]
+            libpath = [ '../libcppmyth', '../libcmyth', '../librefmem' ]
         if platform == 'android':
             makefile = env.NDK('cmyth_java', 'cmyth_java.cpp',
                                LIBS = [ 'cppmyth', 'refmem' ],

@@ -65,5 +65,6 @@ Bindings for languages other than C/C++/Objective-C:
 	 - PHP
 	 - Python
 	 - Ruby
+	 - Common Lisp
 
 Please see the test directory for examples of using each language binding.

@@ -24,8 +24,12 @@
 ;;;; access to a MythTV backend.
 ;;;;
 
-(require 'asdf)
-(require 'cffi)
+#-quicklisp (require 'cffi)
+#+quicklisp (progn
+	      (let ((std-out *standard-output*))
+		(setf *standard-output* (make-broadcast-stream))
+		(ql:quickload :cffi)
+		(setf *standard-output* std-out)))
 
 (defpackage :cmyth
   (:use :common-lisp :cffi)
@@ -43,8 +47,7 @@
    ;; proglist class
    :get-count :get-prog
    ;; proginfo class
-   :item
-   :title :subtitle :description
+   :attr :attr*
    :open-file
    ;; file class
    :bytes :seek :offset :read-bytes :buf :buflen
@@ -62,14 +65,14 @@
 (use-foreign-library librefmem)
 (use-foreign-library libcmyth)
 
-(load (format nil "~A~A"
-	      #+sbcl
-	      (sb-ext:posix-getenv "LISPDIR")
-	      #+clisp
-	      (ext:getenv "LISPDIR")
-	      #+ecl
-	      (si:getenv "LISPDIR")
-	      "/cmyth_cffi.lisp"))
+(load (merge-pathnames "cmyth_cffi.lisp"
+		       #+sbcl
+		       (sb-ext:posix-getenv "LISPDIR")
+		       #+clisp
+		       (ext:getenv "LISPDIR")
+		       #+ecl
+		       (si:getenv "LISPDIR")
+		       ))
 
 ;;;
 ;;; refmem functions
@@ -160,8 +163,9 @@
   (:documentation "cmyth program info class"))
 
 (defgeneric release (proginfo))
-(defgeneric equals (proginfo proginfo))
-(defgeneric item (proginfo which))
+(defgeneric equals (proginfo proginfo2))
+(defgeneric attr (proginfo &rest items))
+(defgeneric attr* (proginfo &rest items))
 (defgeneric port (proginfo))
 (defgeneric seconds (proginfo))
 (defgeneric bytes (proginfo))
@@ -170,6 +174,10 @@
 (defgeneric description (proginfo))
 (defgeneric path-name (proginfo))
 (defgeneric open-file (proginfo))
+
+(defun add-hash (p name
+		 &optional (fname (find-symbol (string-upcase name) 'cmyth)))
+  (setf (gethash name (hash p)) (funcall fname p)))
 
 (defmethod release ((p proginfo))
   (ref_release (pinfo p))
@@ -180,8 +188,18 @@
       t
       nil))
 
-(defmethod item ((p proginfo) which)
-  (gethash which (hash p)))
+(defmethod attr* ((p proginfo) &rest items)
+  (loop for i in items collect
+       (let ((str (gethash i (hash p))))
+	 (if (null str)
+	     (add-hash p i)
+	     str))))
+
+(defmethod attr ((p proginfo) &rest items)
+  (let ((result (apply #'attr* p items)))
+    (if (= 1 (length result))
+	(values-list result)
+	result)))
 
 (defun get-string (func p)
   (let* ((str (funcall func (pinfo p)))
@@ -213,23 +231,13 @@
 (defmethod open-file ((p proginfo))
   (new-file (pinfo p)))
 
-(defun add-hash (p name &optional (fname name))
-  (setf (gethash name (hash p)) (funcall fname p)))
-
 (defun new-proginfo (conn plist which)
   (let* ((pinfo (cmyth_proglist_get_item plist which))
 	 (cbl (cmyth_get_commbreaklist conn pinfo))
-	 (hash (make-hash-table)))
+	 (hash (make-hash-table :test 'equal)))
     (if (pointer-eq pinfo (null-pointer))
 	nil
 	(let ((p (make-instance 'proginfo :pinfo pinfo :cbl cbl :hash hash)))
-	  (add-hash p 'port)
-	  (add-hash p 'seconds)
-	  (add-hash p 'bytes)
-	  (add-hash p 'title)
-	  (add-hash p 'subtitle)
-	  (add-hash p 'description)
-	  (add-hash p 'pathname 'path-name)
 	  p))))
 
 ;;;
@@ -242,7 +250,7 @@
 
 (defgeneric release (proglist))
 (defgeneric get-count (proglist))
-(defgeneric get-prog (proglist :int))
+(defgeneric get-prog (proglist which))
 
 (defmethod release ((p proglist))
   (ref_release (plist p)))
