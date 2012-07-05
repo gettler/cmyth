@@ -43,6 +43,7 @@ swig/*.py
 swig/*.bundle
 swig/cmyth.lisp
 swig/lisp/cmyth.lisp
+swig/lisp/cmyth.asd
 swig/org
 swig/python_build
 swig/python/setup.py
