@@ -160,19 +160,59 @@ if env['PLATFORM'] == 'ios':
     env.Replace(CXXFLAGS = cflags)
     env.Replace(LDFLAGS = ldflags)
 
+def commonpath(l1, l2, common=[]):
+    if len(l1) < 1:
+        return (common, l1, l2)
+    if len(l2) < 1:
+        return (common, l1, l2)
+    if l1[0] != l2[0]:
+        return (common, l1, l2)
+    return commonpath(l1[1:], l2[1:], common+[l1[0]])
+
+def relpath(p1, p2):
+    (common,l1,l2) = commonpath(p1.split(os.path.sep), p2.split(os.path.sep))
+    p = []
+    if len(l1) > 1:
+        p = [ '../' * (len(l1)-1) ]
+    p = p + l2
+    return os.path.join( *p )
+
 #
 # SCons builders
 #
 def create_link(target, source, env):
-    os.symlink(os.path.basename(str(source[0])),
-               os.path.abspath(str(target[0])))
+    src = os.path.abspath(str(source[0]))
+    link = os.path.abspath(str(target[0]))
+    os.symlink(relpath(link,src), link)
 
 builder = SCons.Builder.Builder(action = create_link)
 env.Append(BUILDERS = {"Symlink" : builder})
 
+def cat_files(target, source, env):
+    with open(str(target[0]), "w") as f:
+        if 'HEADER' in env:
+            f.write(env['HEADER'])
+            f.write('\n')
+        for s in source:
+            src = open(str(s), "r")
+            buf = src.read()
+            f.write(buf)
+
+builder = SCons.Builder.Builder(action = cat_files)
+env.Append(BUILDERS = {"CatFiles" : builder})
+
 if env['PLATFORM'] == 'android':
     ndk_tool = Tool('android_ndk', toolpath = [ 'scons' ])
     ndk_tool(env)
+
+gem_tool = Tool('gen_gemspec', toolpath = [ 'scons' ])
+gem_tool(env)
+
+setup_tool = Tool('gen_setup', toolpath = [ 'scons' ])
+setup_tool(env)
+
+setup_tool = Tool('gen_asdf', toolpath = [ 'scons' ])
+setup_tool(env)
 
 #
 # Check the command line targets

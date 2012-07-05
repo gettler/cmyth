@@ -6,18 +6,17 @@ if [ "${TOP}" == "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
-if [ "${PREFIX}" == "" ] ; then
-    INSTDIR=${TOP}/install
-else
-    INSTDIR=${PREFIX}
-fi
+LIBCMYTH=${TOP}/libcmyth
+LIBCPPMYTH=${TOP}/libcppmyth
+LIBREFMEM=${TOP}/librefmem
 
 TESTDIR=${TOP}/test
-PYTHONDIR=${INSTDIR}/lib/python
-LIBDIR=${INSTDIR}/lib
+SWIGDIR=${TOP}/swig
 
-export PYTHONPATH=${PYTHONDIR}
-export LD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
-export DYLD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
+LIBRARY_PATH=${LIBCMYTH}:${LIBCPPMYTH}:${LIBREFMEM}
+
+export PYTHONPATH=${SWIGDIR}:${SWIGDIR}/python
+export LD_LIBRARY_PATH=${LIBRARY_PATH}
+export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 
 ${TESTDIR}/test_python.py $@

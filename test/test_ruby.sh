@@ -6,18 +6,18 @@ if [ "${TOP}" == "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
-if [ "${PREFIX}" == "" ] ; then
-    INSTDIR=${TOP}/install
-else
-    INSTDIR=${PREFIX}
-fi
+LIBCMYTH=${TOP}/libcmyth
+LIBCPPMYTH=${TOP}/libcppmyth
+LIBREFMEM=${TOP}/librefmem
 
 TESTDIR=${TOP}/test
-RUBYDIR=${INSTDIR}/lib/ruby
-LIBDIR=${INSTDIR}/lib
+SWIGDIR=${TOP}/swig
 
-export RUBYLIB=${RUBYDIR}
-export LD_LIBRARY_PATH=${RUBYDIR}:${LIBDIR}
-export DYLD_LIBRARY_PATH=${RUBYDIR}:${LIBDIR}
+export RUBYLIB=${SWIGDIR}/ruby/lib
+
+LIBRARY_PATH=${LIBCMYTH}:${LIBCPPMYTH}:${LIBREFMEM}
+
+export LD_LIBRARY_PATH=${LIBRARY_PATH}
+export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 
 ${TESTDIR}/test_ruby.rb $@

@@ -15,6 +15,8 @@
 *.jar
 *.jnilib
 *.dylib
+*.gem
+*.gemspec
 ._*
 src/mythcat
 src/mythfuse
@@ -38,7 +40,11 @@ swig/*.php
 swig/*.py
 swig/*.bundle
 swig/cmyth.lisp
+swig/lisp/cmyth.lisp
 swig/org
+swig/python_build
+swig/python/setup.py
+swig/python/cmyth.py
 test/test_cpp
 xcode/build
 jni

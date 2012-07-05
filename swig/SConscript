@@ -69,7 +69,7 @@ def CheckRuby(context):
 def CheckLisp(context):
     context.Message('Checking for Common Lisp ...')
     lisp = []
-    for l in [ 'sbcl', 'clisp', 'ecl' ]:
+    for l in [ 'sbcl', 'ccl', 'ecl', 'clisp' ]:
         cmd = SCons.Util.WhereIs(l)
         if cmd:
             lisp += [ cmd ]
@@ -96,6 +96,7 @@ if env['CMD_SWIG']:
         env['PHP_INCLUDE'] = conf.CheckPHP()
         env['CMD_PYTHON'] = conf.CheckBinary('python')
         env['CMD_RUBY'] = conf.CheckBinary('ruby')
+        env['CMD_GEM'] = conf.CheckBinary('gem')
         env['CMD_RUBYARCH'] = conf.CheckRuby()
         env['CMD_LISP'] = conf.CheckLisp()
 env = conf.Finish()
@@ -123,12 +124,29 @@ if 'CMD_PYTHON' in env:
                                            '../libcmyth',
                                            '../librefmem' ])
     targets += shared
-    env.Install(prefix + '/lib/python', [ 'cmyth.py' ])
-    env.Install(prefix + '/lib', shared)
-    if 'install' in COMMAND_LINE_TARGETS:
-        env.Command(prefix + '/lib/python/_cmyth.so', shared,
-                    'ln -sf ../libcmyth_python.so %s/%s' % (prefix,
-                                                            'lib/python/_cmyth.so'))
+    link_so = env.Symlink('python/_cmyth.so', 'libcmyth_python.so')
+    targets += link_so
+    link_py = env.Symlink('python/cmyth.py', 'cmyth.py')
+    targets += link_py
+    version = '0.0.1'
+    setup = env.GenSetup('python/setup.py',
+                         [ link_so, link_py, 'python/__init__.py' ],
+                         SETUP_NAME = 'cmyth',
+                         SETUP_VERSION = version,
+                         SETUP_DESCRIPTION =
+                         'An API for communicating with a MythTV backend.',
+                         SETUP_AUTHOR = 'Jon Gettler',
+                         SETUP_AUTHOR_EMAIL = 'gettler@mvpmc.org',
+                         SETUP_URL = 'http://cmyth.github.com/',
+                         SETUP_LICENSE = 'LGPL',
+                         SETUP_DIR = 'swig/python')
+    targets += setup
+
+    if env.GetOption('clean'):
+        try:
+            os.unlink('cmyth.pyc')
+        except:
+            pass
 
 #
 # PHP
@@ -173,12 +191,14 @@ if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
                                            '../libcmyth',
                                            '../librefmem' ])
     targets += shared
-    env.Install(prefix + '/lib', shared)
-    env.Install(prefix + '/lib/php', 'cmyth.php')
-    if 'install' in COMMAND_LINE_TARGETS:
-        env.Command(prefix + '/lib/php/cmyth.so', shared,
-                    'ln -sf ../libcmyth_php.so %s/%s' % (prefix,
-                                                         'lib/php/cmyth.so'))
+    link = env.Symlink('php/cmyth.so', 'libcmyth_php.so')
+    targets += link
+
+    if env.GetOption('clean'):
+        try:
+            shutil.rmtree('php')
+        except:
+            pass
 
 #
 # Ruby
@@ -206,11 +226,32 @@ if 'CMD_RUBY' in env and 'CMD_RUBYARCH' in env:
                                            '../libcmyth',
                                            '../librefmem' ])
     targets += shared
-    env.Install(prefix + '/lib', shared)
-    if 'install' in COMMAND_LINE_TARGETS:
-        env.Command(prefix + '/lib/ruby/cmyth' + suffix, shared,
-                    'ln -sf ../libcmyth_ruby.so %s/%s' %
-                    (prefix, 'lib/ruby/cmyth' + suffix))
+    link = env.Symlink('ruby/lib/cmyth.so', 'libcmyth_ruby.so')
+    targets += link
+    version = '0.0.1'
+    gem = env.GenGemspec('ruby/cmyth.gemspec', link,
+                         GEM_NAME = 'cmyth',
+                         GEM_VERSION = version,
+                         GEM_SUMMARY = 'cmyth MythTV API',
+                         GEM_DESCRIPTION = 'API for communicating with a MythTV backend.',
+                         GEM_AUTHORS = 'Jon Gettler',
+                         GEM_EMAIL = 'gettler@mvpmc.org',
+                         GEM_HOMEPAGE = 'http://cmyth.github.com/',
+                         GEM_DIR = 'swig/ruby')
+    targets += gem
+
+    if 'CMD_GEM' in env:
+        gem = env.Command([ 'ruby/cmyth-%s.gem' % version ],
+                          [ gem, link ],
+                          'cd swig/ruby && gem build cmyth.gemspec')
+        targets += gem
+
+
+    if env.GetOption('clean'):
+        try:
+            shutil.rmtree('ruby')
+        except:
+            pass
 
 #
 # Java
@@ -306,7 +347,23 @@ if 'CMD_LISP' in env:
                        interface,
                        [ cmd_c % ('cffi', 'cmyth.lisp') ])
     targets += lisp
-    env.InstallAs(prefix + '/lib/lisp/cmyth_cffi.lisp', 'cmyth.lisp')
-    env.InstallAs(prefix + '/lib/lisp/cmyth.lisp', 'cmyth_package.lisp')
+    package = env.CatFiles([ 'lisp/cmyth.lisp' ],
+                           [ lisp],
+                           HEADER = '(in-package #:cmyth)')
+    targets += package
+    setup = env.GenASDF('lisp/cmyth.asd',
+                        [ 'lisp/package.lisp',
+                          lisp,
+                          'lisp/refmem.lisp', 'lisp/exception.lisp',
+                          'lisp/connection.lisp', 'lisp/file.lisp',
+                          'lisp/proginfo.lisp', 'lisp/proglist.lisp' ],
+                        ASDF_NAME = 'cmyth',
+                        ASDF_DESCRIPTION =
+                        'An API for communicating with a MythTV backend.',
+                        ASDF_AUTHOR = 'Jon Gettler <gettler@mvpmc.org>',
+                        ASDF_LICENSE = 'LGPL',
+                        ASDF_DEPENDS = [ 'cffi' ],
+                        ASDF_DIR = 'swig/lisp')
+    targets += setup
 
 Return('targets')

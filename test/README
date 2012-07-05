@@ -2,12 +2,9 @@ libcmyth test code
 ------------------
 
 This directory contains test programs for C++ and the SWIG language bindings
-built upon libcppmyth.  The bash scripts assume that you have installed
-libcmyth into a directory called "install" at the top of the cmyth git
-repository, and that you have a MythTV server running on "localhost".
-
-In order to override the default install location, use the PREFIX environment
-variable.
+built upon libcppmyth.  The bash scripts assume that you have successfully
+built all of libcmyth, and that you have a MythTV server running on
+"localhost".
 
 In order to override the default MythTV server, provide it as an argument to
 the bash script.

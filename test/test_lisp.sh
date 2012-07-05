@@ -6,31 +6,33 @@ if [ "${TOP}" == "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
-if [ "${PREFIX}" == "" ] ; then
-    INSTDIR=${TOP}/install
-else
-    INSTDIR=${PREFIX}
-fi
+LIBCMYTH=${TOP}/libcmyth
+LIBCPPMYTH=${TOP}/libcppmyth
+LIBREFMEM=${TOP}/librefmem
 
 TESTDIR=${TOP}/test
-LIBDIR=${INSTDIR}/lib
-LISPDIR=${LIBDIR}/lisp/
+SWIGDIR=${TOP}/swig
 
-export LD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
-export DYLD_LIBRARY_PATH=${PYTHONDIR}:${LIBDIR}
+LIBRARY_PATH=${LIBCMYTH}:${LIBCPPMYTH}:${LIBREFMEM}
 
-export LISPDIR
+export LD_LIBRARY_PATH=${LIBRARY_PATH}
+export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
+
+export LISPDIR=${SWIGDIR}/lisp/
 
 SBCL=`which sbcl`
-CLISP=`which clisp`
+CCL=`which ccl`
 ECL=`which ecl`
+CLISP=`which clisp`
 
 if [ "$SBCL" != "" ] ; then
-    sbcl --noinform --non-interactive --load ${LISPDIR}/cmyth.lisp --load ${TESTDIR}/test_lisp.lisp $@
+    sbcl --noinform --non-interactive --load ${TESTDIR}/test_lisp.lisp $@
+elif [ "$CCL" != "" ] ; then
+    ccl --load ${TESTDIR}/test_lisp.lisp --eval "(quit)" -- $@
+elif [ "$ECL" != "" ] ; then
+    ecl -q -load ${TESTDIR}/test_lisp.lisp -eval "(quit)" -- $@
 elif [ "$CLISP" != "" ] ; then
     clisp -q -q ${TESTDIR}/test_lisp.lisp -- $@
-elif [ "$ECL" != "" ] ; then
-    ecl -q -load ${LISPDIR}/cmyth.lisp -load ${TESTDIR}/test_lisp.lisp -eval "(quit)" -- $@
 else
     echo "No supported Lisp implementation found!"
 fi

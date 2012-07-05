@@ -6,17 +6,18 @@ if [ "${TOP}" == "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
-if [ "${PREFIX}" == "" ] ; then
-    INSTDIR=${TOP}/install
-else
-    INSTDIR=${PREFIX}
-fi
+LIBCMYTH=${TOP}/libcmyth
+LIBCPPMYTH=${TOP}/libcppmyth
+LIBREFMEM=${TOP}/librefmem
 
 TESTDIR=${TOP}/test/test_java.class
-LIBDIR=${INSTDIR}/lib
+SWIGDIR=${TOP}/swig
 
-export LD_LIBRARY_PATH=${LIBDIR}
+LIBRARY_PATH=${LIBCMYTH}:${LIBCPPMYTH}:${LIBREFMEM}
+
+export LD_LIBRARY_PATH=${LIBRARY_PATH}
+export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 
 cd ${TESTDIR}
 
-java -classpath ${TESTDIR}:${LIBDIR}/cmyth.jar -Djava.library.path=${LIBDIR} test_java $@
+java -classpath ${TESTDIR}:${SWIGDIR}/cmyth.jar -Djava.library.path=${SWIGDIR} test_java $@

@@ -6,19 +6,19 @@ if [ "${TOP}" == "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
-if [ "${PREFIX}" == "" ] ; then
-    INSTDIR=${TOP}/install
-else
-    INSTDIR=${PREFIX}
-fi
+LIBCMYTH=${TOP}/libcmyth
+LIBCPPMYTH=${TOP}/libcppmyth
+LIBREFMEM=${TOP}/librefmem
 
 TESTDIR=${TOP}/test
-LIBDIR=${INSTDIR}/lib
-PHPDIR=${INSTDIR}/lib/php
+SWIGDIR=${TOP}/swig
+PHPDIR=${TOP}/swig/php
 
-export LD_LIBRARY_PATH=${LIBDIR}
-export DYLD_LIBRARY_PATH=${LIBDIR}
+LIBRARY_PATH=${LIBCMYTH}:${LIBCPPMYTH}:${LIBREFMEM}
+
+export LD_LIBRARY_PATH=${LIBRARY_PATH}
+export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 
 ARGS="-- $@"
 
-php -d enable_dl=On -d extension_dir=${PHPDIR} -d include_path=${PHPDIR} ${ARGS} < ${TESTDIR}/test_php.php 2> /dev/null
+php -d enable_dl=On -d extension_dir=${PHPDIR} -d include_path=${SWIGDIR} ${ARGS} < ${TESTDIR}/test_php.php 2> /dev/null

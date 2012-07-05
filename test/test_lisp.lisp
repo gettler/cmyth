@@ -17,22 +17,26 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ;;;;
 
-#+clisp
-(ignore-errors
-  (load (merge-pathnames ".clisprc.lisp" (user-homedir-pathname))))
+#-quicklisp
+(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname))))
+  (when (probe-file quicklisp-init)
+    (load quicklisp-init)))
 
-#-quicklisp (progn
-	      (require 'md5)
-	      (require 'cffi))
-#+quicklisp (progn
-	      (let ((std-out *standard-output*))
-		(setf *standard-output* (make-broadcast-stream))
-		(ql:quickload :cffi)
-		(ql:quickload :md5)
-		(setf *standard-output* std-out)))
+#+clisp (progn
+	  (asdf:oos 'asdf:load-op "iolib")
+	  (asdf:oos 'asdf:load-op "cffi")
+	  (asdf:oos 'asdf:load-op "md5"))
+#-clisp (progn
+	  (require 'asdf)
+	  (require 'iolib)
+	  (require 'cffi)
+	  (require 'md5))
 
-#+clisp
-(load (merge-pathnames "cmyth.lisp" (ext:getenv "LISPDIR")))
+(pushnew (iolib.syscalls:getenv "LISPDIR")
+	 asdf:*central-registry* :test #'equal)
+
+#+clisp (asdf:oos 'asdf:load-op "cmyth")
+#-clisp (require 'cmyth)
 
 (use-package :cmyth)
 
@@ -80,6 +84,7 @@
 	 (nth 1
 	      #+sbcl *posix-argv*
 	      #+clisp ext:*args*
+	      #+ccl (list "ccl" (nth 2 ccl::command-line-arguments))
 	      #+ecl (list "ecl" (si:argv (- (si:argc) 1))))))
 
     (if (eq host nil)
@@ -89,8 +94,10 @@
     (test-host host)
     (test-file host)
 
-    (format t "Refs:  ~A~%" (get-refs))
-    (format t "Bytes: ~A~%" (get-bytes))))
+    (format t "Refs:  ~A~%" (ref-refs))
+    (format t "Bytes: ~A~%" (ref-bytes))))
 
+;(compile 'test-host)
+;(compile 'test-file)
 (main)
 ;(sb-ext:save-lisp-and-die "test_lisp" :executable t :toplevel 'main)
