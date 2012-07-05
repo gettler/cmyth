@@ -669,13 +669,12 @@ cmyth_update_bookmark_setting(cmyth_database_t db, cmyth_proginfo_t prog)
 	return (1);
 }
 
-/* used to set bookmark in mythtv */
 long long 
 cmyth_get_bookmark_mark(cmyth_database_t db, cmyth_proginfo_t prog, long long bk, int mode)
 {
 	MYSQL_RES *res = NULL;
 	MYSQL_ROW row;
-	const char *query_str = "SELECT mark,type FROM recordedseek WHERE chanid = ? AND offset< ? AND (type = 6 or type = 9 )AND starttime = ? ORDER by MARK DESC LIMIT 0,1;";
+	const char *query_str = "SELECT mark, type FROM recordedseek WHERE chanid = ? AND offset < ? AND (type = 6 or type = 9 ) AND starttime = ? ORDER by MARK DESC LIMIT 0, 1;";
 	int rows = 0;
 	long long mark=0;
 	int rectype = 0;
@@ -714,13 +713,9 @@ cmyth_get_bookmark_mark(cmyth_database_t db, cmyth_proginfo_t prog, long long bk
 		}
 	}
 
-
-	return (mark);
+	return mark;
 }
 
-/* used for getting mythtv bookmarks 
-BLUE button on the remote
-*/
 int 
 cmyth_get_bookmark_offset(cmyth_database_t db, long chanid, long long mark, char *starttime, int mode) 
 {
@@ -731,7 +726,6 @@ cmyth_get_bookmark_offset(cmyth_database_t db, long chanid, long long mark, char
 	int rectype = 0;
 	cmyth_mysql_query_t * query;
 	
-	//const char *query_str = "SELECT * FROM recordedseek WHERE chanid = ? AND mark= ? AND starttime = ?;";
 	const char *query_str = "SELECT * FROM recordedseek WHERE chanid = ? AND mark<= ? AND starttime = ? ORDER BY MARK DESC LIMIT 1;";
 
 	query = cmyth_mysql_query_create(db,query_str);
@@ -761,7 +755,7 @@ cmyth_get_bookmark_offset(cmyth_database_t db, long chanid, long long mark, char
 		else if (mode == 1) {
 			mark=(mark/12)+1;
 		}
-		query = cmyth_mysql_query_create(db,query_str);
+		query = cmyth_mysql_query_create(db, query_str);
 		if (cmyth_mysql_query_param_long(query, chanid) < 0
 			|| cmyth_mysql_query_param_long(query, mark) < 0
 			|| cmyth_mysql_query_param_str(query, starttime) < 0

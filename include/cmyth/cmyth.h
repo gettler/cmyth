@@ -209,6 +209,12 @@ extern void cmyth_dbg_none(void);
  */
 extern void cmyth_dbg(int level, char *fmt, ...);
 
+/**
+ * Define a callback to use to send messages rather than using stdout
+ * \param msgcb function pointer to pass a string to
+ */
+extern void cmyth_set_dbg_msgcallback(void (*msgcb)(int level,char *));
+
 /*
  * -----------------------------------------------------------------
  * Connection Operations
@@ -601,6 +607,9 @@ extern long long cmyth_ringbuf_seek(cmyth_recorder_t rec,
 				    long long offset,
 				    int whence);
 
+extern int cmyth_ringbuf_read(cmyth_recorder_t rec,
+			      char *buf,
+			      unsigned long len);
 /*
  * -----------------------------------------------------------------
  * Recorder Number Operations
@@ -924,6 +933,21 @@ extern long cmyth_proginfo_card_id(cmyth_proginfo_t prog);
  */
 extern char *cmyth_proginfo_recgroup(cmyth_proginfo_t prog);
 
+/**
+ * Retrieve the channel icon path this program info
+ * \param prog proginfo handle
+ * \return null-terminated string
+ */
+extern char *cmyth_proginfo_chanicon(cmyth_proginfo_t prog);
+
+
+/**
+ * Retrieve the production year for this program info
+ * \param prog proginfo handle
+ * \return production year
+ */
+extern unsigned short cmyth_proginfo_year(cmyth_proginfo_t prog);
+
 /*
  * -----------------------------------------------------------------
  * Program List Operations
@@ -989,7 +1013,7 @@ extern cmyth_freespace_t cmyth_freespace_create(void);
  * -------
  */
 extern long long cmyth_get_bookmark(cmyth_conn_t conn, cmyth_proginfo_t prog);
-extern int cmyth_get_bookmark_offset(cmyth_database_t db, long chanid, long long mark, char *starttime,int mode);
+extern int cmyth_get_bookmark_offset(cmyth_database_t db, long chanid, long long mark, char *starttime, int mode);
 extern int cmyth_update_bookmark_setting(cmyth_database_t, cmyth_proginfo_t);
 extern long long cmyth_get_bookmark_mark(cmyth_database_t, cmyth_proginfo_t, long long, int);
 extern int cmyth_set_bookmark(cmyth_conn_t conn, cmyth_proginfo_t prog,

@@ -18,6 +18,8 @@
 *.gem
 *.gemspec
 ._*
+.cproject
+.project
 src/mythcat
 src/mythfuse
 src/mythping
