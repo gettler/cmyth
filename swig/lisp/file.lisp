@@ -39,13 +39,15 @@
 	   (incf n bytes)))
     n))
 
-(defun new-file (p)
+(defun new-file (p &optional (thumbnail nil))
   (let* ((buflen 131072)
 	 (buf (foreign-alloc :unsigned-char :count buflen))
 	 (host (cmyth_proginfo_host p))
 	 (port (cmyth_proginfo_port p))
 	 (conn (cmyth_conn_connect_ctrl host port 16384 4096))
-	 (file (cmyth_conn_connect_file p conn buflen buflen))
+	 (file (if thumbnail
+		   (cmyth_conn_connect_thumbnail p conn buflen buflen)
+		   (cmyth_conn_connect_file p conn buflen buflen)))
 	 (ret nil))
     (if file
 	(setf ret (make-instance 'file :file file :buf buf :buflen buflen)))
@@ -58,6 +60,16 @@
     `(let (,f ,local)
        (unwind-protect
 	    (progn (setq ,local (open-file ,p)
+			 ,f ,local)
+		   ,@body)
+	 (unless (null ,local)
+	   (release ,local))))))
+
+(defmacro with-open-thumbnail ((f p) &body body)
+  (let ((local (gensym)))
+    `(let (,f ,local)
+       (unwind-protect
+	    (progn (setq ,local (open-file ,p t)
 			 ,f ,local)
 		   ,@body)
 	 (unless (null ,local)

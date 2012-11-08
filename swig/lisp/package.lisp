@@ -5,7 +5,7 @@
   (:export
    ;; macros
    #:with-connection #:with-proglist #:with-progs #:with-proginfo
-   #:with-open-program
+   #:with-open-program #:with-open-thumbnail
    ;; common methods
    #:release
    ;; refmem functions

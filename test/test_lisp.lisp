@@ -17,26 +17,15 @@
 ;;;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 ;;;;
 
-#-quicklisp
-(let ((quicklisp-init (merge-pathnames "quicklisp/setup.lisp" (user-homedir-pathname))))
-  (when (probe-file quicklisp-init)
-    (load quicklisp-init)))
-
-#+clisp (progn
-	  (asdf:oos 'asdf:load-op "iolib")
-	  (asdf:oos 'asdf:load-op "cffi")
-	  (asdf:oos 'asdf:load-op "md5"))
-#-clisp (progn
-	  (require 'asdf)
-	  (require 'iolib)
-	  (require 'cffi)
-	  (require 'md5))
+(require 'asdf)
+(require 'iolib)
+(require 'cffi)
+(require 'md5)
 
 (pushnew (iolib.syscalls:getenv "LISPDIR")
 	 asdf:*central-registry* :test #'equal)
 
-#+clisp (asdf:oos 'asdf:load-op "cmyth")
-#-clisp (require 'cmyth)
+(require 'cmyth)
 
 (use-package :cmyth)
 
@@ -74,7 +63,36 @@
 		(format t "MD5: ")
 		(md5:update-md5-state m b)
 		(loop for x across (md5:finalize-md5-state m) do
-		     (format t "~(~X~)" x))
+		     (format t "~(~2,'0X~)" x))
+		(format t "~%"))))))
+    (exception (e)
+      (format t "Exception: ~A~%" (text e)))))
+
+(defun test-thumbnail (host)
+  (handler-case
+      (with-connection (conn host)
+	(with-proglist (pl conn)
+	  (with-proginfo (p pl 0)
+	    (with-open-thumbnail (f p)
+	      (seek f 0)
+	      (let* ((m (md5:make-md5-state))
+		     (buflen (buflen f))
+		     (size 0)
+		     (b (make-array (* 5 buflen)
+				    :element-type '(unsigned-byte 8))))
+		(dotimes (i 5)
+		  (let ((len (read-bytes f)))
+		    (if (> len 0)
+			(progn
+			  (incf size len)
+			  (dotimes (j len)
+			    (setf (aref b (+ j (* i buflen)))
+				  (cffi:mem-aref (buf f) :unsigned-char j)))))))
+		(format t "Thumbnail image size: ~A~%" size)
+		(format t "MD5: ")
+		(md5:update-md5-state m (subseq b 0 size))
+		(loop for x across (md5:finalize-md5-state m) do
+		     (format t "~(~2,'0X~)" x))
 		(format t "~%"))))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
@@ -93,11 +111,9 @@
     (test-host "nosuchhost")
     (test-host host)
     (test-file host)
+    (test-thumbnail host)
 
     (format t "Refs:  ~A~%" (ref-refs))
     (format t "Bytes: ~A~%" (ref-bytes))))
 
-;(compile 'test-host)
-;(compile 'test-file)
 (main)
-;(sb-ext:save-lisp-and-die "test_lisp" :executable t :toplevel 'main)
