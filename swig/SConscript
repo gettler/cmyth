@@ -80,10 +80,23 @@ def CheckLisp(context):
     context.Result(ret)
     return ret
 
+def CheckPerl(context):
+    context.Message('Checking for Perl headers ...')
+    cmd = context.env['CMD_PERL']
+    if cmd:
+        rc,perlarch,err = env.run_command('perl -e \'use Config; print '
+                                          '"$Config{archlib}\n";\'')
+        ret = perlarch[:-1]
+    else:
+        ret = None
+    context.Result(ret)
+    return ret
+
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
                                        'CheckRuby' : CheckRuby,
                                        'CheckLisp' : CheckLisp,
+                                       'CheckPerl' : CheckPerl,
                                        'CheckPHP': CheckPHP })
 env['CMD_SWIG'] = conf.CheckBinary('swig')
 if env['CMD_SWIG']:
@@ -99,6 +112,8 @@ if env['CMD_SWIG']:
         env['CMD_GEM'] = conf.CheckBinary('gem')
         env['CMD_RUBYARCH'] = conf.CheckRuby()
         env['CMD_LISP'] = conf.CheckLisp()
+        env['CMD_PERL'] = conf.CheckBinary('perl')
+        env['CMD_PERLARCH'] = conf.CheckPerl()
 env = conf.Finish()
 
 #
@@ -158,21 +173,7 @@ if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
     targets += php
     phpinc = env['PHP_INCLUDE']
     if sys.platform == 'darwin':
-        undefs = [ '_zend_register_resource', '_zend_rsrc_list_get_rsrc_type',
-                   '_zend_wrong_param_count', '_compiler_globals',
-                   '_zend_hash_find', '_gc_remove_zval_from_buffer',
-                   '_zend_register_long_constant', '_zend_get_constant',
-                   '__efree', '__emalloc', '_zend_error', '__zend_list_find',
-                   '_main', '__zend_get_parameters_array_ex',
-                   '_zend_register_list_destructors_ex',
-                   '__zval_copy_ctor_func', '__convert_to_string',
-                   '__zend_hash_add_or_update', '_executor_globals',
-                   '_zval_used_for_init', '_zval_is_true', '__object_init',
-                   '_php_strtolower', '__estrndup', '__object_init_ex',
-                   '_zend_lookup_class', '_convert_to_long',
-                   '_zend_throw_exception',
-                   '_add_index_stringl' ]
-        linkflags = '-Wl,-flat_namespace,-U,' + ',-U,'.join(undefs)
+        linkflags = '-Wl,-flat_namespace,-undefined,warning'
     else:
         linkflags = ''
     shared = env.SharedLibrary('cmyth_php',
@@ -365,5 +366,37 @@ if 'CMD_LISP' in env:
                         ASDF_DEPENDS = [ 'cffi' ],
                         ASDF_DIR = 'swig/lisp')
     targets += setup
+
+#
+# Perl
+#
+if 'CMD_PERL' in env:
+    perlarch = env['CMD_PERLARCH']
+    perl = env.Command([ 'cmyth_perl.cpp', 'cmyth.pm' ],
+                       interface,
+                       [ cmd % ('perl', 'cmyth_perl.cpp') ])
+    targets += perl
+    if sys.platform == 'darwin':
+        linkflags = '-Wl,-flat_namespace,-undefined,warning'
+    else:
+        linkflags = ''
+    libs = [ 'cppmyth', 'cmyth', 'refmem' ]
+    shared = env.SharedLibrary('cmyth_perl',
+                               [ 'cmyth_perl.cpp' ],
+                               SHLIBSUFFIX = '.so',
+                               LIBS = libs,
+                               CCFLAGS = '',
+                               CXXFLAGS = '',
+                               LINKFLAGS = linkflags,
+                               CPPPATH = [ '../include', '.',
+                                           '%s/CORE' % perlarch ],
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
+    targets += shared
+    link = env.Symlink('perl/cmyth.so', 'libcmyth_perl.so')
+    targets += link
+    link = env.Symlink('perl/cmyth.pm', 'cmyth.pm')
+    targets += link
 
 Return('targets')

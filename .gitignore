@@ -39,6 +39,7 @@ swig/*.c
 swig/*.cpp
 swig/*.h
 swig/*.php
+swig/*.pm
 swig/*.py
 swig/*.bundle
 swig/cmyth.lisp
@@ -48,6 +49,7 @@ swig/org
 swig/python_build
 swig/python/setup.py
 swig/python/cmyth.py
+swig/perl/cmyth.pm
 test/test_cpp
 xcode/build
 jni
