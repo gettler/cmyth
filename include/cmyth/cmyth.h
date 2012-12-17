@@ -380,7 +380,9 @@ extern cmyth_event_t cmyth_event_get(cmyth_conn_t conn, char * data, int len);
 /**
  * Selects on the event socket, waiting for an event to show up.
  * allows nonblocking access to events.
- * \return <= 0 on failure
+ * \return < 0 on failure
+ * \return 0 on timeout
+ * \return > 0 when an event is available
  */
 extern int cmyth_event_select(cmyth_conn_t conn, struct timeval *timeout);
 

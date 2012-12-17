@@ -19,7 +19,7 @@
 (defgeneric subtitle (proginfo))
 (defgeneric description (proginfo))
 (defgeneric path-name (proginfo))
-(defgeneric open-file (proginfo))
+(defgeneric open-file (proginfo &optional thumbnail))
 
 (defun add-hash (p name
 		 &optional (fname (find-symbol (string-upcase name) 'cmyth)))
@@ -74,8 +74,8 @@
 (defmethod path-name ((p proginfo))
   (get-string #'cmyth_proginfo_pathname p))
 
-(defmethod open-file ((p proginfo))
-  (new-file (pinfo p)))
+(defmethod open-file ((p proginfo) &optional (thumbnail nil))
+  (new-file (pinfo p) thumbnail))
 
 (defun new-proginfo (conn plist which)
   (let* ((pinfo (cmyth_proglist_get_item plist which))

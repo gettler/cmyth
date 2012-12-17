@@ -62,6 +62,7 @@ Supported build environments include:
 Bindings for languages other than C/C++/Objective-C:
 
 	 - Java
+	 - Perl
 	 - PHP
 	 - Python
 	 - Ruby

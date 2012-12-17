@@ -177,6 +177,10 @@ cmyth_event_select(cmyth_conn_t conn, struct timeval *timeout)
 
 	ret = select((int)fd+1, &fds, NULL, NULL, timeout);
 
+	if (ret < 0) {
+		ret = -errno;
+	}
+
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s [%s:%d]: (trace) }\n",
 				__FUNCTION__, __FILE__, __LINE__);
 

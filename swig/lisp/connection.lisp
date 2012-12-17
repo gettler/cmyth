@@ -16,6 +16,7 @@
 (defgeneric get-proglist (connection))
 (defgeneric get-progs (connection))
 (defgeneric storage-space (connection))
+(defgeneric get-event (connection &optional number))
 
 (defmethod release ((c connection))
   (ref_release (conn c)))
@@ -54,6 +55,25 @@
     (foreign-free total)
     (foreign-free used)
     ret))
+
+(defmethod get-event ((c connection) &optional (timeout nil))
+  (with-foreign-pointer (tv 8)
+    (let ((to (null-pointer)))
+      (if timeout
+	  (multiple-value-bind (seconds microseconds)
+	      (truncate timeout)
+	    (setf (mem-ref tv :int 0) seconds)
+	    (setf (mem-ref tv :int 1) (truncate (* microseconds 1000000)))
+	    (setf to tv)))
+	(let ((rc (cmyth_event_select (conn c) to)))
+	  (cond ((< rc 0)
+		 (return-from get-event (values :CMYTH_EVENT_CLOSE nil)))
+		((= rc 0)
+		 (return-from get-event (values nil nil)))))))
+  (let* ((len 512)
+	 (data (foreign-alloc :char :count len))
+	 (event (cmyth_event_get (conn c) data len)))
+    (values event data)))
 
 (defun storage-space-total (c)
   (nth 0 (storage-space c)))

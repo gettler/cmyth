@@ -17,6 +17,7 @@ output = None
 
 o_proglist = False
 o_info = False
+o_event = False
 
 def do_info():
     print 'Protocol: %d' % conn.protocol_version()
@@ -68,9 +69,17 @@ def do_cat(i):
     file.release()
     f.close()
 
+def do_event():
+    e = conn.get_event(0)
+    if not e:
+        print 'Waiting for the next event...'
+        e = conn.get_event()
+    print 'Event: %d (%s)' % (e.type(), e.message())
+
 def usage(code):
     print 'Usage: mythinfo.py [options]'
     print '       --cat number        dump a recording to stdout'
+    print '       --event             get next event'
     print '       --help              print this help'
     print '       --info              print backend info'
     print '       --output filename   filename to write recording'
@@ -80,8 +89,8 @@ def usage(code):
     sys.exit(code)
 
 try:
-    opts, args = getopt.getopt(sys.argv[1:], 'c:hio:ps:v',
-                               [ 'cat=', 'help', 'info', 'proglist',
+    opts, args = getopt.getopt(sys.argv[1:], 'c:ehio:ps:v',
+                               [ 'cat=', 'event', 'help', 'info', 'proglist',
                                  'output=', 'server=', 'verbose' ])
 except getopt.GetoptError:
     usage(1)
@@ -89,18 +98,20 @@ except getopt.GetoptError:
 for o, a in opts:
     if o in ('-c', '--cat'):
         which = a
+    if o in ('-e', '--event'):
+        o_event = True
     if o in ('-h', '--help'):
         usage(0)
     if o in ('-i', '--info'):
         o_info = True
     if o in ('-o', '--output'):
-        output = a;
+        output = a
     if o in ('-p', '--proglist'):
         o_proglist = True;
     if o in ('-s', '--server'):
         server = a
     if o in ('-v', '--verbose'):
-        verbose = True;
+        verbose = True
 
 if server == None:
     print 'Error: server not specified!'
@@ -121,7 +132,10 @@ if which:
     sys.exit(0)
 
 if o_info:
-    do_info();
+    do_info()
 
 if o_proglist:
-    do_proglist();
+    do_proglist()
+
+if o_event:
+    do_event()
