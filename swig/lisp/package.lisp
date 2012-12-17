@@ -12,7 +12,7 @@
    #:ref-refs #:ref-bytes #:ref-release
    ;; connection class
    #:new-connection #:protocol-version #:get-proglist #:get-progs
-   #:storage-space-total #:storage-space-used
+   #:storage-space-total #:storage-space-used #:get-event
    ;; proglist class
    #:get-count #:get-prog
    ;; proginfo class

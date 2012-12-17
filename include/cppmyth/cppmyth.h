@@ -69,6 +69,21 @@ public:
 	void release(void) { }
 };
 
+class event {
+public:
+	event(cmyth_event_t, char *msg = NULL);
+	~event();
+
+	void release(void);
+
+	const char *message(void) { return event_msg; }
+	cmyth_event_t type(void) { return event_type; }
+
+private:
+	char *event_msg;
+	cmyth_event_t event_type;
+};
+
 class connection {
 public:
 	connection(const char *server, unsigned short port = DEFAULT_PORT,
@@ -81,6 +96,9 @@ public:
 
 	long long storage_space_total(void);
 	long long storage_space_used(void);
+
+	event* get_event(float timeout);
+	event* get_event(void) { return get_event(-1); }
 
 	bool hung(void);
 

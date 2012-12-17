@@ -19,6 +19,9 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <string.h>
+#include <errno.h>
 #include <cppmyth/cppmyth.h>
 
 using namespace cmyth;
@@ -153,4 +156,44 @@ connection::_watchdog(void)
 		sleep(5);
 	}
 #endif /* !ANDROID */
+}
+
+event*
+connection::get_event(float timeout)
+{
+	char data[512];
+	cmyth_event_t e;
+	struct timeval *to = NULL;
+	struct timeval tv;
+	int rc;
+
+	if (timeout >= 0) {
+		tv.tv_sec = (int)timeout;
+		tv.tv_usec = (int)((timeout - tv.tv_sec) * 1000000);
+
+		to = &tv;
+	}
+
+	rc = cmyth_event_select(conn, to);
+
+	if (rc < 0) {
+		if (rc == -EINTR) {
+			return NULL;
+		} else {
+			return new event(CMYTH_EVENT_CLOSE);
+		}
+	}
+	if (rc == 0) {
+		return NULL;
+	}
+
+	memset(data, 0, sizeof(data));
+
+	e = cmyth_event_get(conn, data, sizeof(data));
+
+	if (strlen(data) > 0) {
+		return new event(e, data);
+	} else {
+		return new event(e);
+	}
 }

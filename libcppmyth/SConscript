@@ -13,10 +13,10 @@ platform = env['PLATFORM']
 name = 'cppmyth'
 major = 0
 minor = 1
-branch = 1
+branch = 2
 
 src = [ 'connection.cpp', 'proginfo.cpp', 'proglist.cpp', 'refmem.cpp',
-        'file.cpp', 'exception.cpp' ]
+        'file.cpp', 'exception.cpp', 'event.cpp' ]
 
 if platform == 'android':
     makefile = env.NDK(name, src,

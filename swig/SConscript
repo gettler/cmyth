@@ -270,9 +270,10 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
                   'SWIGTYPE_p_cmyth_conn_t',
                   'SWIGTYPE_p_cmyth_proglist_t',
                   'SWIGTYPE_p_cmyth_proginfo_t',
+                  'SWIGTYPE_p_cmyth_event_t',
                   'filetype_t',
                   'connection', 'exception', 'proginfo', 'proglist',
-                  'refmem', 'file' ]
+                  'refmem', 'file', 'event' ]
         src_list = []
         for i in bases:
             src_list.append(path + '/' + i + '.java')
