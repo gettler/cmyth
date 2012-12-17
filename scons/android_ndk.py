@@ -56,7 +56,9 @@ def generate_makefile(env, target, source, includes, libs, libdirs):
     prefix = os.path.dirname(_detect(env))
 
     incs += [ prefix + '/sources/cxx-stl/gnu-libstdc++/include',
-              prefix + '/sources/cxx-stl/gnu-libstdc++/libs/armeabi/include' ]
+              prefix + '/sources/cxx-stl/gnu-libstdc++/libs/armeabi/include',
+              prefix + '/sources/cxx-stl/gnu-libstdc++/4.4.3/include',
+              prefix + '/sources/cxx-stl/gnu-libstdc++/4.4.3/libs/armeabi/include' ]
 
     makefile = [ '# Automatically generated',
                  '# Do not edit!',
