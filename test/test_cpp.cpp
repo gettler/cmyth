@@ -34,11 +34,26 @@ void test_host(const char *host)
 	connection *conn;
 	proglist *list;
 	proginfo *prog;
+	event *ev;
 	const char *start, *end;
 
 	conn = new connection(host);
 
 	printf("Protocol version: %d\n", conn->protocol_version());
+
+	ev = conn->get_event(0.1);
+
+	if (ev) {
+		const char *msg = ev->message();
+		const char *name = ev->name();
+
+		printf("Event: \"%s\" (%d) \"%s\"\n", name, ev->type(), msg);
+
+		ref_release((void*)name);
+		ref_release((void*)msg);
+
+		delete(ev);
+	}
 
 	list = conn->get_proglist();
 
