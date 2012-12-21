@@ -118,6 +118,8 @@ typedef unsigned int time_t;
 %newobject start_str;
 %newobject subtitle;
 %newobject title;
+%newobject message;
+%newobject name;
 
 #if defined(SWIGPYTHON)
 %typemap(newfree) proginfo * "ref_release($1);";
@@ -131,6 +133,9 @@ typedef unsigned int time_t;
 
 %typemap(newfree) connection * "ref_release($1);";
 %newobject connection;
+
+%typemap(newfree) event * "ref_release($1);";
+%newobject get_event;
 #endif /* SWIGPYTHON */
 
 #if defined(SWIGCFFI)

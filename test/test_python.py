@@ -29,6 +29,10 @@ def test_host(host):
 
     list = conn.get_proglist()
 
+    e = conn.get_event(0.1)
+    if e:
+        print 'Event: "%s" (%d) "%s"' % (e.name(), e.type(), e.message())
+
     print 'Recording count: %d' % list.get_count()
 
     total = conn.storage_space_total()

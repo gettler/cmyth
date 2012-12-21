@@ -34,6 +34,9 @@
       (with-connection (conn host)
 	(with-progs (progs conn)
 	  (format t "Protocol Version: ~A~%" (protocol-version conn))
+	  (multiple-value-bind (type data)
+	      (get-event conn)
+	    (format t "Event: ~A \"~A\"~%" type data))
 	  (format t "Recording Count: ~A~%" (length progs))
 	  (format t "Storage space total: ~A  used: ~A~%"
 		  (storage-space-total conn) (storage-space-used conn))

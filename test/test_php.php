@@ -26,6 +26,18 @@ function test_host($host) {
 
 	echo "Protocol version: " . $ver . "\n";
 
+	$ev = $conn->get_event(0.1);
+
+	if ($ev) {
+		$name = $ev->name();
+		$type = $ev->type();
+		$message = $ev->message();
+
+		echo "Event: \"" . $name . "\" (" . $type . ") \"" . $message . "\"\n";
+
+		$ev->release();
+	}
+
 	$list = $conn->get_proglist();
 
 	$total = $conn->storage_space_total();

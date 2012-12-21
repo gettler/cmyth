@@ -38,6 +38,7 @@ typedef enum {
 	FILETYPE_THUMBNAIL,
 } filetype_t;
 
+class event;
 class connection;
 class proginfo;
 class proglist;
@@ -76,11 +77,13 @@ public:
 
 	void release(void);
 
-	const char *message(void) { return event_msg; }
-	cmyth_event_t type(void) { return event_type; }
+	const char *message(void);
+	const char *name(void);
+	int type(void) { return (int)event_type; }
 
 private:
-	char *event_msg;
+	const char *event_msg;
+	const char *event_name;
 	cmyth_event_t event_type;
 };
 
@@ -108,6 +111,7 @@ public:
 
 private:
 	cmyth_conn_t conn;
+	cmyth_conn_t econn;
 	pthread_t wd_thread;
 };
 

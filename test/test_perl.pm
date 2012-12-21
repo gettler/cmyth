@@ -29,6 +29,18 @@ sub test_host {
     my $ver = $conn->protocol_version();
     print "Protocol version: $ver\n";
 
+    my $ev = $conn->get_event(0.1);
+
+    if ($ev) {
+	my $name = $ev->name();
+	my $type = $ev->type();
+	my $message = $ev->message();
+
+	print "Event: \"$name\" ($type) \"$message\"\n";
+
+	$ev->release();
+    }
+
     my $list = $conn->get_proglist();
     my $count = $list->get_count();
     print "Recording count: $count\n";

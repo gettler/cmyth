@@ -28,18 +28,28 @@ import org.mvpmc.cmyth.java.connection;
 import org.mvpmc.cmyth.java.proglist;
 import org.mvpmc.cmyth.java.proginfo;
 import org.mvpmc.cmyth.java.file;
+import org.mvpmc.cmyth.java.event;
 
 public class test_java {
 	public static void test_host(String host) {
 		connection conn;
 		proglist list;
 		proginfo prog;
+		event ev;
 		int i;
 
 		conn = new connection(host);
 
 		System.out.format("Protocol version: %d%n",
 				  conn.protocol_version());
+
+		ev = conn.get_event((float)0.1);
+		if (ev != null) {
+			System.out.format("Event: \"%s\" (%d) \"%s\"%n",
+					  ev.name(), ev.type(), ev.message());
+
+			ev.release();
+		}
 
 		list = conn.get_proglist();
 

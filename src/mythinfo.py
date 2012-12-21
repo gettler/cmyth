@@ -14,6 +14,7 @@ server = None
 verbose = False
 which = None
 output = None
+conn = None
 
 o_proglist = False
 o_info = False
@@ -72,14 +73,21 @@ def do_cat(i):
 def do_event():
     e = conn.get_event(0)
     if not e:
-        print 'Waiting for the next event...'
+        print 'Waiting for events...'
         e = conn.get_event()
-    print 'Event: %d (%s)' % (e.type(), e.message())
+    while True:
+        print 'Event: "%s" (%d) (%s)' % (e.name(), e.type(), e.message())
+        if e.type() == 0 or e.type() == 1:
+            return
+        try:
+            e = conn.get_event()
+        except:
+            return
 
 def usage(code):
     print 'Usage: mythinfo.py [options]'
     print '       --cat number        dump a recording to stdout'
-    print '       --event             get next event'
+    print '       --event             display server events'
     print '       --help              print this help'
     print '       --info              print backend info'
     print '       --output filename   filename to write recording'

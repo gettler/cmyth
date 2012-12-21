@@ -27,6 +27,18 @@ def test_host(host)
 
   puts "Protocol version: #{ver}"
 
+  ev = conn.get_event(0.1)
+
+  if (ev)
+    name = ev.name()
+    type = ev.type()
+    message = ev.message()
+
+    puts "Event: \"#{name}\" (#{type}) \"#{message}\""
+
+    ev.release()
+  end
+
   list = conn.get_proglist()
   count = list.get_count()
 

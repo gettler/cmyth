@@ -49,6 +49,13 @@ connection::connection(const char *server, unsigned short port,
 
 	conn = (cmyth_conn_t)ref_hold(conn);
 
+	econn = cmyth_conn_connect_event((char*)server, port, buflen,
+					 tcp_rcvbuf);
+
+	if (econn == NULL) {
+		throw exception("Connection failed");
+	}
+
 #if !defined(ANDROID)
 	pthread_create(&wd_thread, NULL, wd, this);
 #endif
@@ -73,6 +80,10 @@ connection::release(void)
 	if (conn) {
 		ref_release(conn);
 		conn = NULL;
+	}
+	if (econn) {
+		ref_release(econn);
+		econn = NULL;
 	}
 }
 
@@ -174,7 +185,7 @@ connection::get_event(float timeout)
 		to = &tv;
 	}
 
-	rc = cmyth_event_select(conn, to);
+	rc = cmyth_event_select(econn, to);
 
 	if (rc < 0) {
 		if (rc == -EINTR) {
@@ -189,7 +200,7 @@ connection::get_event(float timeout)
 
 	memset(data, 0, sizeof(data));
 
-	e = cmyth_event_get(conn, data, sizeof(data));
+	e = cmyth_event_get(econn, data, sizeof(data));
 
 	if (strlen(data) > 0) {
 		return new event(e, data);
