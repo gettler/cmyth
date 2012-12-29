@@ -1,3 +1,7 @@
+#
+# SWIG language binding test cases.
+#
+
 import shutil
 
 Import('env')
@@ -8,7 +12,7 @@ cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
 ccflags = env['CFLAGS']
 
-if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
+if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
     java_test = env.Java('test_java.class', 'test_java.java',
                          JAVACLASSPATH='swig')
     targets += java_test
