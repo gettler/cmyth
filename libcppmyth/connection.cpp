@@ -22,6 +22,7 @@
 #include <string.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/time.h>
 #include <cppmyth/cppmyth.h>
 
 using namespace cmyth;
