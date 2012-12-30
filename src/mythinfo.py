@@ -1,5 +1,24 @@
 #!/usr/bin/python
 #
+# Copyright (C) 2012, Jon Gettler
+# http://www.mvpmc.org/
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+
+#
 # MythTV information script
 #
 # This is an example of how to use the libcmyth python language bindings.
@@ -10,22 +29,14 @@ import getopt
 
 import cmyth
 
-server = None
 verbose = False
-which = None
-output = None
-conn = None
 
-o_proglist = False
-o_info = False
-o_event = False
-
-def do_info():
+def do_info(conn):
     print 'Protocol: %d' % conn.protocol_version()
     list = conn.get_proglist()
     print 'Recording count: %d' % list.get_count()
 
-def do_proglist():
+def do_proglist(conn, o_proglist):
     list = conn.get_proglist()
     count = list.get_count()
     print 'Recordings:'
@@ -50,7 +61,7 @@ def do_proglist():
             start += 60
             end += 60
 
-def do_cat(i):
+def do_cat(conn, i, output):
     list = conn.get_proglist()
     count = list.get_count()
     if i > count:
@@ -70,8 +81,8 @@ def do_cat(i):
     file.release()
     f.close()
 
-def do_event():
-    e = conn.get_event(0)
+def do_event(conn):
+    e = conn.get_event(0.1)
     if not e:
         print 'Waiting for events...'
         e = conn.get_event()
@@ -96,54 +107,70 @@ def usage(code):
     print '       --verbose           verbose output'
     sys.exit(code)
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'c:ehio:ps:v',
-                               [ 'cat=', 'event', 'help', 'info', 'proglist',
-                                 'output=', 'server=', 'verbose' ])
-except getopt.GetoptError:
-    usage(1)
+def main():
+    global verbose
 
-for o, a in opts:
-    if o in ('-c', '--cat'):
-        which = a
-    if o in ('-e', '--event'):
-        o_event = True
-    if o in ('-h', '--help'):
-        usage(0)
-    if o in ('-i', '--info'):
-        o_info = True
-    if o in ('-o', '--output'):
-        output = a
-    if o in ('-p', '--proglist'):
-        o_proglist = True;
-    if o in ('-s', '--server'):
-        server = a
-    if o in ('-v', '--verbose'):
-        verbose = True
-
-if server == None:
-    print 'Error: server not specified!'
-    usage(1)
-
-try:
-    conn = cmyth.connection(server)
-except:
-    print 'Could not connect to MythTV server at %s' % server
-    sys.exit(-1)
-
-if which:
     try:
-        do_cat(int(which))
+        opts, args = getopt.getopt(sys.argv[1:], 'c:ehio:ps:v',
+                                   [ 'cat=', 'event', 'help', 'info',
+                                     'proglist', 'output=', 'server=',
+                                     'verbose' ])
+    except getopt.GetoptError:
+        usage(1)
+
+    conn = None
+    server = None
+    which = None
+    output = None
+
+    o_proglist = False
+    o_info = False
+    o_event = False
+
+    for o, a in opts:
+        if o in ('-c', '--cat'):
+            which = a
+        if o in ('-e', '--event'):
+            o_event = True
+        if o in ('-h', '--help'):
+            usage(0)
+        if o in ('-i', '--info'):
+            o_info = True
+        if o in ('-o', '--output'):
+            output = a
+        if o in ('-p', '--proglist'):
+            o_proglist = True;
+        if o in ('-s', '--server'):
+            server = a
+        if o in ('-v', '--verbose'):
+            verbose = True
+
+    if server == None:
+        print 'Error: server not specified!'
+        usage(1)
+
+    try:
+        conn = cmyth.connection(server)
     except:
-        print 'Failure detected!'
+        print 'Could not connect to MythTV server at %s' % server
         sys.exit(-1)
-    sys.exit(0)
 
-if o_info:
-    do_info()
+    if which:
+        try:
+            do_cat(conn, int(which), output)
+        except:
+            print 'Failure detected!'
+            sys.exit(-1)
+        sys.exit(0)
 
-if o_proglist:
-    do_proglist()
+    if o_info:
+        do_info(conn)
 
-if o_event:
-    do_event()
+    if o_proglist:
+        do_proglist(conn, o_proglist)
+
+    if o_event:
+        do_event(conn)
+
+if __name__ == "__main__":
+    main()

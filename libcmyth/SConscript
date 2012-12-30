@@ -13,7 +13,7 @@ platform = env['PLATFORM']
 name = 'cmyth'
 major = 0
 minor = 1
-branch = 3
+branch = 4
 
 src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
         'file.c', 'freespace.c', 'keyframe.c',

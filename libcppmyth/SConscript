@@ -13,7 +13,7 @@ platform = env['PLATFORM']
 name = 'cppmyth'
 major = 0
 minor = 1
-branch = 2
+branch = 3
 
 src = [ 'connection.cpp', 'proginfo.cpp', 'proglist.cpp', 'refmem.cpp',
         'file.cpp', 'exception.cpp', 'event.cpp' ]

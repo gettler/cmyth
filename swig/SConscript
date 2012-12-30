@@ -40,57 +40,83 @@ def CheckJava(context):
     for dir in dirs:
         if os.path.isdir(dir):
             ret = dir
-    context.Result(ret)
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
     return ret
 
 def CheckPHP(context):
     context.Message('Checking for PHP headers ...')
     cmd = context.env['CMD_PHPCONFIG']
+    ret = None
     if cmd:
         rc,phpinc,err = context.env.run_command('%s --include-dir' % cmd)
         ret = phpinc[:-1]
+    if ret == None:
+        context.Result('no')
     else:
-        ret = None
-    context.Result(ret)
+        context.Result(ret)
     return ret
 
 def CheckRuby(context):
     context.Message('Checking for Ruby headers ...')
     cmd = context.env['CMD_RUBY']
+    ret = None
     if cmd:
         rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
                                           '\'puts Config::CONFIG["archdir"]\'')
         ret = rubyarch[:-1]
+        if not os.path.isfile(ret + '/ruby.h'):
+            ret = None
+    if ret == None:
+        context.Result('no')
     else:
-        ret = None
-    context.Result(ret)
+        context.Result(ret)
     return ret
 
 def CheckLisp(context):
     context.Message('Checking for Common Lisp ...')
     lisp = []
+    ret = None
     for l in [ 'sbcl', 'ccl', 'ecl', 'clisp' ]:
         cmd = SCons.Util.WhereIs(l)
         if cmd:
             lisp += [ cmd ]
     if len(lisp) > 0:
         ret = lisp[0]
+    if ret == None:
+        context.Result('no')
     else:
-        ret = None
-    context.Result(ret)
+        context.Result(ret)
     return ret
 
 def CheckPerl(context):
     context.Message('Checking for Perl headers ...')
     cmd = context.env['CMD_PERL']
+    ret = None
     if cmd:
         rc,perlarch,err = env.run_command('perl -e \'use Config; print '
                                           '"$Config{archlib}\n";\'')
         ret = perlarch[:-1]
+    if ret == None:
+        context.Result('no')
     else:
-        ret = None
-    context.Result(ret)
+        context.Result(ret)
     return ret
+
+env['CMD_JAVAC'] = None
+env['JAVA_HOME'] = None
+env['CMD_PHP'] = None
+env['CMD_PHPCONFIG'] = None
+env['PHP_INCLUDE'] = None
+env['CMD_PYTHON'] = None
+env['CMD_RUBY'] = None
+env['CMD_GEM'] = None
+env['CMD_RUBYARCH'] = None
+env['CMD_LISP'] = None
+env['CMD_PERL'] = None
+env['CMD_PERLARCH'] = None
 
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
@@ -119,7 +145,7 @@ env = conf.Finish()
 #
 # Python
 #
-if 'CMD_PYTHON' in env:
+if env['CMD_PYTHON'] != None:
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     if sys.platform == 'darwin':
         libs += [ 'python' ]
@@ -166,7 +192,7 @@ if 'CMD_PYTHON' in env:
 #
 # PHP
 #
-if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
+if env['CMD_PHP'] != None and env['CMD_PHPCONFIG'] != None and env['PHP_INCLUDE'] != None:
     php = env.Command([ 'cmyth_php.cpp', 'php_cmyth.h', 'cmyth.php' ],
                       interface,
                       [ cmd % ('php', 'cmyth_php.cpp') ])
@@ -204,7 +230,7 @@ if 'CMD_PHP' in env and 'CMD_PHPCONFIG' in env and 'PHP_INCLUDE' in env:
 #
 # Ruby
 #
-if 'CMD_RUBY' in env and 'CMD_RUBYARCH' in env:
+if env['CMD_RUBY'] != None and env['CMD_RUBYARCH'] != None:
     rubyarch = env['CMD_RUBYARCH']
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     suffix = '.so'
@@ -241,7 +267,7 @@ if 'CMD_RUBY' in env and 'CMD_RUBYARCH' in env:
                          GEM_DIR = 'swig/ruby')
     targets += gem
 
-    if 'CMD_GEM' in env:
+    if env['CMD_GEM'] != None:
         gem = env.Command([ 'ruby/cmyth-%s.gem' % version ],
                           [ gem, link ],
                           'cd swig/ruby && gem build cmyth.gemspec')
@@ -257,7 +283,7 @@ if 'CMD_RUBY' in env and 'CMD_RUBYARCH' in env:
 #
 # Java
 #
-if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
+if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
     javapath = env['JAVA_HOME']
     if os.path.isfile(javapath + '/include/jni.h') or \
             os.path.isfile(javapath + '/Headers/jni.h'):
@@ -344,7 +370,7 @@ if 'CMD_JAVAC' in env and 'JAVA_HOME' in env:
 #
 # Common Lisp
 #
-if 'CMD_LISP' in env:
+if env['CMD_LISP'] != None:
     lisp = env.Command([ 'cmyth.lisp' ],
                        interface,
                        [ cmd_c % ('cffi', 'cmyth.lisp') ])
@@ -371,7 +397,7 @@ if 'CMD_LISP' in env:
 #
 # Perl
 #
-if 'CMD_PERL' in env:
+if env['CMD_PERL'] != None and env['CMD_PERLARCH'] != None:
     perlarch = env['CMD_PERLARCH']
     perl = env.Command([ 'cmyth_perl.cpp', 'cmyth.pm' ],
                        interface,

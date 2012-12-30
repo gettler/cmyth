@@ -1,5 +1,8 @@
 #!/usr/bin/python
 #
+# Copyright (C) 2012, Jon Gettler
+# http://www.mvpmc.org/
+#
 # An example of using the libcmyth Python bindings
 #
 # Inspired by the following example of wxPython and MplayerCtrl:
@@ -29,7 +32,7 @@ current = None
 frame = None
 
 class Frame(wx.Frame):
-    class preferenes(wx.Dialog):
+    class preferences(wx.Dialog):
         def __init__(self, parent, id, title):
             global server
 
@@ -73,7 +76,7 @@ class Frame(wx.Frame):
         
         # Create the GUI
         self.create_menu()
-        self.create_widgets()
+        self.create_widgets(mplayer)
 
         # Bind the mplayer events
         self.Bind(mpc.EVT_MEDIA_STARTED, self.on_media_started)
@@ -126,7 +129,7 @@ class Frame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.on_about, about_item)
         self.Bind(wx.EVT_MENU, self.on_prefs, prefs_item)
 
-    def create_widgets(self):
+    def create_widgets(self, mplayer):
         main = wx.BoxSizer(wx.VERTICAL)
         info = wx.BoxSizer(wx.HORIZONTAL)
         buttons = wx.BoxSizer(wx.VERTICAL)
@@ -203,7 +206,7 @@ class Frame(wx.Frame):
         dialog.Destroy()
 
     def on_prefs(self, event):
-        dialog = self.preferenes(self, -1, 'buttons')
+        dialog = self.preferences(self, -1, 'buttons')
         dialog.ShowModal()
         dialog.Destroy()
 
@@ -216,7 +219,10 @@ class Frame(wx.Frame):
             prog = self.programs.get_prog(i)
             t = str(prog.title())
             if t == self.titles[index]:
-                subtitles.append(str(prog.subtitle()))
+                sub = prog.subtitle()
+                if sub == '':
+                    sub = prog.start_str()
+                subtitles.append(str(sub))
                 self.episodes.append(prog)
         self.episode_box.Set(subtitles)
 
@@ -326,19 +332,25 @@ def usage(code):
     print '       --server hostname   MythTV server hostname/IP'
     sys.exit(code)
 
-try:
-    opts, args = getopt.getopt(sys.argv[1:], 'hs:',
-                               [ 'help', 'server=' ])
-except getopt.GetoptError:
-    usage(1)
+def main():
+    global server
 
-for o, a in opts:
-    if o in ('-h', '--help'):
-        usage(0)
-    if o in ('-s', '--server'):
-        server = a
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], 'hs:',
+                                   [ 'help', 'server=' ])
+    except getopt.GetoptError:
+        usage(1)
 
-app = wx.App(redirect=False)
-mplayer = find_binary('mplayer')
-frame = Frame(None, -1, 'mythplayer', mplayer)
-app.MainLoop()
+    for o, a in opts:
+        if o in ('-h', '--help'):
+            usage(0)
+        if o in ('-s', '--server'):
+            server = a
+
+    app = wx.App(redirect=False)
+    mplayer = find_binary('mplayer')
+    frame = Frame(None, -1, 'mythplayer', mplayer)
+    app.MainLoop()
+
+if __name__ == "__main__":
+    main()
