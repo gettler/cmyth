@@ -30,12 +30,9 @@ if platform == 'android':
     targets = [ makefile ]
 else:
     libs = []
-    conf = Configure(env)
-    if conf.CheckCHeader('mysql/mysql.h') and conf.CheckLib('mysqlclient'):
-        conf.env.Append(CPPFLAGS = '-DHAS_MYSQL')
+    if env['HAS_MYSQL'] == 'yes':
         libs += [ 'mysqlclient' ]
         src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
-    env = conf.Finish()
 
     linkflags = env.soname(name, major, minor, branch)
 

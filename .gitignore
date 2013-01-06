@@ -30,8 +30,10 @@ cscope.files
 cscope.in.out
 cscope.out
 cscope.po.out
-doc
 install
+doc/all
+doc/api
+doc/man
 cmyth.conf
 cmyth/build
 src/cmyth_ffi.py

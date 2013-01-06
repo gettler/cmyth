@@ -13,9 +13,10 @@ cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
 libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
 targets = [ ]
 
-conf = Configure(env)
-if conf.CheckLib('mysqlclient'):
+if env['HAS_MYSQL'] == 'yes':
     libs += [ 'mysqlclient' ]
+
+conf = Configure(env)
 if conf.CheckLib('fuse'):
     mythfuse = env.Program('mythfuse', 'mythfuse.c',
                            CCFLAGS = env['CFLAGS'] + ' -D_FILE_OFFSET_BITS=64',
