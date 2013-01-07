@@ -73,9 +73,8 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = src include/cmyth include/refmem
-FILE_PATTERNS          = *.h \
-                         *.c
+INPUT                  = src include/cmyth include/cppmyth include/refmem
+FILE_PATTERNS          = *.h *.c *.cpp
 RECURSIVE              = NO
 EXCLUDE                = 
 			 

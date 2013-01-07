@@ -37,6 +37,7 @@
  *
  * \section libraries_external Library APIs
  * \li \link cmyth.h libcmyth \endlink
+ * \li \link cppmyth.h libcppmyth \endlink
  * \li \link refmem.h librefmem \endlink
  *
  * \section source Example Source Code
