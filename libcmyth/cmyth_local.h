@@ -83,9 +83,6 @@ typedef int cmyth_socket_t;
 #define closesocket(fd) close(fd)
 #endif /* _MSC_VER */
 
-#define mutex __cmyth_mutex
-extern pthread_mutex_t mutex;
-
 /*
  * Some useful constants
  */
@@ -113,6 +110,7 @@ struct cmyth_conn {
 	unsigned long	conn_version;	/**< protocol version */
 	volatile int	conn_hang;	/**< is connection stuck? */
 	int		conn_tcp_rcvbuf;/**< TCP receive buffer size */
+	pthread_mutex_t conn_mutex;
 };
 
 /* Sergio: Added to support new livetv protocol */
@@ -270,6 +268,7 @@ struct cmyth_proginfo {
 struct cmyth_proglist {
 	cmyth_proginfo_t *proglist_list;
 	long proglist_count;
+	pthread_mutex_t proglist_mutex;
 };
 
 /*

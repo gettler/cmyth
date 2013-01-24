@@ -58,3 +58,5 @@ jni
 obj
 install
 win32/Debug
+librefmem/version.h
+libcmyth/version.h

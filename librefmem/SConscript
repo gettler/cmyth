@@ -13,9 +13,15 @@ platform = env['PLATFORM']
 name = 'refmem'
 major = 0
 minor = 1
-branch = 0
+branch = 1
+fork = 0
 
-src = [ 'alloc.c', 'debug.c' ]
+version = [ major, minor, branch, fork ]
+
+libver = env.GenVersion('version.h',
+                        VERSION = version)
+
+src = [ 'alloc.c', 'debug.c', 'version.c' ]
 
 if platform == 'android':
     makefile = env.NDK(name, src,
@@ -24,40 +30,34 @@ if platform == 'android':
     env.Install(prefix + '/lib', makefile)
     targets = [ makefile ]
 else:
-    linkflags = env.soname(name, major, minor, branch)
+    linkflags = env.soname(name, major, minor, branch, fork)
 
     static = env.StaticLibrary(name, src,
-                               LIBS = [],
-                               CCFLAGS = env['CFLAGS'],
                                LINKFLAGS = env['LDFLAGS'],
-                               CPPPATH = [ '../include', '.' ])
-    shared = env.SharedLibrary(name, src,
-                               SHLIBSUFFIX = env.shlibsuffix(major, minor, branch),
-                               LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
                                LIBS = [],
                                CCFLAGS = env['CFLAGS'],
                                CPPPATH = [ '../include', '.' ])
-
-    link0 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major, minor)), shared)
-    link1 = env.Symlink('lib%s%s' % (name, env.shlibsuffix(major)), link0)
-    link2 = env.Symlink('lib%s%s' % (name, env.shlibsuffix()), link1)
+    shared = env.CMSharedLibrary(name, src,
+                                 VERSION = version,
+                                 LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
+                                 LIBS = [],
+                                 CCFLAGS = env['CFLAGS'],
+                                 CPPPATH = [ '../include', '.' ])
 
     env.Install(prefix + '/lib', static)
 
     targets = [ static ]
 
     if env.build_shared():
-        targets += [ shared, link0, link1, link2 ]
+        targets += [ shared ]
+        env.InstallShared(prefix + '/lib', shared,
+                          VERSION = version,
+                          NAME = name)
 
-        lib0 = env.Install(prefix + '/lib', shared)
-        lib1 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                               env.shlibsuffix(major, minor)), lib0)
-        lib2 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                               env.shlibsuffix(major)), lib1)
-        lib3 = env.Symlink('%s/lib/lib%s%s' % (prefix, name,
-                                               env.shlibsuffix()), lib2)
+env.Depends(src, libver)
 
 if env.GetOption('clean'):
+    env.Clean(targets, [ 'version.h' ])
     for i in [ 'libs', 'jni', 'obj' ]:
         try:
             shutil.rmtree(i)

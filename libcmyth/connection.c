@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2012, Eric Lund, Jon Gettler
+ *  Copyright (C) 2004-2013, Eric Lund, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -32,8 +32,6 @@
 
 static char * cmyth_conn_get_setting_unlocked(cmyth_conn_t conn, const char* hostname, const char* setting);
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-
 typedef struct {
 	unsigned int version;
 	char token[14]; // up to 13 chars used in v74 + the terminating NULL character
@@ -54,8 +52,69 @@ static myth_protomap_t protomap[] = {
 	{73, "D7FE8D6F"},
 	{74, "SingingPotato"},
 	{75, "SweetRock"},
+	{76, "FireWilde"},
+	{77, "WindMark"},
 	{0, ""}
 };
+
+#define VERSION_CACHE_SIZE	8
+
+struct version_cache_s {
+	char *host;
+	unsigned int version;
+};
+
+static struct version_cache_s version_cache[VERSION_CACHE_SIZE];
+
+static unsigned int
+get_host_version(char *host)
+{
+	int i;
+
+	for (i=0; i<VERSION_CACHE_SIZE; i++) {
+		if ((version_cache[i].host != NULL) &&
+		    (strcmp(host, version_cache[i].host) == 0)) {
+			return version_cache[i].version;
+		}
+	}
+
+	/*
+	 * Start the protocol negotiation by offering the highest version
+	 * that libcmyth supports.
+	 */
+	return 77;
+}
+
+static void
+set_host_version(char *host, unsigned int version)
+{
+	int i;
+
+	for (i=0; i<VERSION_CACHE_SIZE; i++) {
+		if ((version_cache[i].host != NULL) &&
+		    (strcmp(host, version_cache[i].host) == 0)) {
+			version_cache[i].version = version;
+			return;
+		}
+	}
+
+	for (i=0; i<VERSION_CACHE_SIZE; i++) {
+		if (version_cache[i].host == NULL) {
+			version_cache[i].host = strdup(host);
+			version_cache[i].version = version;
+			return;
+		}
+	}
+
+	/* Evict a host at random */
+	i = rand() % VERSION_CACHE_SIZE;
+
+	if (version_cache[i].host) {
+		free(version_cache[i].host);
+	}
+	version_cache[i].host = strdup(host);
+	version_cache[i].version = version;
+}
 
 /*
  * cmyth_conn_destroy(cmyth_conn_t conn)
@@ -90,6 +149,7 @@ cmyth_conn_destroy(cmyth_conn_t conn)
 		shutdown(conn->conn_fd, SHUT_RDWR);
 		closesocket(conn->conn_fd);
 	}
+	pthread_mutex_destroy(&conn->conn_mutex);
 	cmyth_dbg(CMYTH_DBG_DEBUG, "%s }\n", __FUNCTION__);
 }
 
@@ -293,8 +353,9 @@ cmyth_connect(char *server, unsigned short port, unsigned buflen,
 	ret->conn_buf = buf;
 	ret->conn_len = 0;
 	ret->conn_pos = 0;
-	ret->conn_version = 8;
+	ret->conn_version = get_host_version(server);
 	ret->conn_tcp_rcvbuf = tcp_rcvbuf;
+	pthread_mutex_init(&ret->conn_mutex, NULL);
 	return ret;
 
     shut:
@@ -389,14 +450,16 @@ cmyth_conn_connect(char *server, unsigned short port, unsigned buflen,
 	cmyth_dbg(CMYTH_DBG_PROTO, "%s: agreed on Version %ld protocol\n",
 		  __FUNCTION__, conn->conn_version);
 
+	set_host_version(server, conn->conn_version);
+
 	/*
-	 * Use a unique hostname for event connections, since the server will
-	 * not send the same event multiple times to the same host.
+	 * Generate a unique hostname for event connections, since the server
+	 * will not send the same event multiple times to the same host.
 	 */
 	if (event) {
 		char buf[128];
-		snprintf(buf, sizeof(buf), "%s_%d_%d", my_hostname,
-			 getpid(), (int)time(NULL));
+		snprintf(buf, sizeof(buf), "%s_%d_%p", my_hostname,
+			 getpid(), conn);
 		sprintf(announcement, "ANN Playback %s %d", buf, event);
 	} else {
 		sprintf(announcement, "ANN Playback %s 0", my_hostname);
@@ -922,7 +985,7 @@ cmyth_conn_get_recorder_from_num(cmyth_conn_t conn, int id)
 		return NULL;
 	}
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 
 	if ((rec=cmyth_recorder_create()) == NULL)
 		goto fail;
@@ -971,7 +1034,7 @@ cmyth_conn_get_recorder_from_num(cmyth_conn_t conn, int id)
 					conn->conn_tcp_rcvbuf) < 0)
 		goto fail;
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return rec;
 
@@ -979,7 +1042,7 @@ cmyth_conn_get_recorder_from_num(cmyth_conn_t conn, int id)
 	if (rec)
 		ref_release(rec);
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return NULL;
 }
@@ -1017,7 +1080,7 @@ cmyth_conn_get_free_recorder(cmyth_conn_t conn)
 		return NULL;
 	}
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 
 	if ((rec=cmyth_recorder_create()) == NULL)
 		goto fail;
@@ -1071,7 +1134,7 @@ cmyth_conn_get_free_recorder(cmyth_conn_t conn)
 					conn->conn_tcp_rcvbuf) < 0)
 		goto fail;
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return rec;
 
@@ -1079,7 +1142,7 @@ cmyth_conn_get_free_recorder(cmyth_conn_t conn)
 	if (rec)
 		ref_release(rec);
 
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return NULL;
 }
@@ -1100,7 +1163,7 @@ cmyth_conn_get_freespace(cmyth_conn_t control,
 	if ((total == NULL) || (used == NULL))
 		return -EINVAL;
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&control->conn_mutex);
 
 	if (control->conn_version >= 32)
 		{ snprintf(msg, sizeof(msg), "QUERY_FREE_SPACE_SUMMARY"); }
@@ -1170,7 +1233,7 @@ cmyth_conn_get_freespace(cmyth_conn_t control,
 		}
 
     out:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&control->conn_mutex);
 
 	return ret;
 }
@@ -1211,7 +1274,7 @@ cmyth_conn_get_free_recorder_count(cmyth_conn_t conn)
 		return -1;
 	}
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 
 	snprintf(msg, sizeof(msg), "GET_FREE_RECORDER_COUNT");
 	if ((err = cmyth_send_message(conn, msg)) < 0) {
@@ -1240,7 +1303,7 @@ cmyth_conn_get_free_recorder_count(cmyth_conn_t conn)
 	ret = c;
 
     err:
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return ret;
 }
@@ -1309,9 +1372,63 @@ cmyth_conn_get_setting(cmyth_conn_t conn, const char* hostname, const char* sett
 {
 	char* result = NULL;
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&conn->conn_mutex);
 	result = cmyth_conn_get_setting_unlocked(conn, hostname, setting);
-	pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&conn->conn_mutex);
 
 	return result;
+}
+
+static int
+okay_command(cmyth_conn_t conn, char *msg, unsigned int min_version)
+{
+	int err;
+	int rc = 0;
+
+	if (!conn) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: no connection\n",
+			  __FUNCTION__);
+		return -1;
+	}
+
+	if (conn->conn_version < min_version) {
+		cmyth_dbg(CMYTH_DBG_ERROR,
+			  "%s: protocol version doesn't support %s\n",
+			  __FUNCTION__, msg);
+		return -1;
+	}
+
+	pthread_mutex_lock(&conn->conn_mutex);
+
+	if ((err = cmyth_send_message(conn, msg)) < 0) {
+		cmyth_dbg(CMYTH_DBG_ERROR,
+			  "%s: cmyth_send_message() failed (%d)\n",
+			  __FUNCTION__, err);
+		rc = -1;
+		goto err;
+	}
+
+	if (cmyth_rcv_okay(conn, "OK") < 0) {
+		cmyth_dbg(CMYTH_DBG_ERROR, "%s: cmyth_rcv_okay() failed\n",
+			  __FUNCTION__);
+		rc = -1;
+		goto err;
+	}
+
+err:
+	pthread_mutex_unlock(&conn->conn_mutex);
+
+	return rc;
+}
+
+int
+cmyth_conn_allow_shutdown(cmyth_conn_t conn)
+{
+	return okay_command(conn, "ALLOW_SHUTDOWN", 18);
+}
+
+int
+cmyth_conn_block_shutdown(cmyth_conn_t conn)
+{
+	return okay_command(conn, "BLOCK_SHUTDOWN", 18);
 }

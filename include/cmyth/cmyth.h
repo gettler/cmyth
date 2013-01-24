@@ -51,6 +51,49 @@
 #define __CMYTH_H
 
 #include <time.h>
+#include <sys/time.h>
+
+#if defined(__GNUC__)
+#define CMYTH_DEPRECATED __attribute__ ((__deprecated__))
+#else
+#define CMYTH_DEPRECATED
+#endif
+
+/*
+ * -----------------------------------------------------------------
+ * Library version information
+ * -----------------------------------------------------------------
+ */
+
+/**
+ * Retrieve the major version number of the library.
+ * \returns The library major version number.
+ */
+extern int cmyth_version_major(void);
+
+/**
+ * Retrieve the minor version number of the library.
+ * \returns The library minor version number.
+ */
+extern int cmyth_version_minor(void);
+
+/**
+ * Retrieve the branch version number of the library.
+ * \returns The library branch version number.
+ */
+extern int cmyth_version_branch(void);
+
+/**
+ * Retrieve the fork version number of the library.
+ * \returns The library fork version number.
+ */
+extern int cmyth_version_fork(void);
+
+/**
+ * Retrieve the version number of the library.
+ * \returns The library version number string.
+ */
+extern const char* cmyth_version(void);
 
 /*
  * -----------------------------------------------------------------
@@ -182,6 +225,8 @@ typedef enum {
 	CMYTH_EVENT_UPDATE_FILE_SIZE,
 	CMYTH_EVENT_GENERATED_PIXMAP,
 	CMYTH_EVENT_CLEAR_SETTINGS_CACHE,
+	CMYTH_EVENT_ERROR,
+	CMYTH_EVENT_COMMFLAG_START,
 } cmyth_event_t;
 
 /**
@@ -405,6 +450,23 @@ extern int cmyth_conn_get_protocol_version(cmyth_conn_t conn);
 extern char * cmyth_conn_get_setting(cmyth_conn_t conn,
                const char* hostname, const char* setting);
 
+/**
+ * Inform the MythTV backend that a shutdown is allowed even though this
+ * connction is active.
+ * \param conn connection handle
+ * \retval 0 success
+ * \retval <0 error
+ */
+extern int cmyth_conn_allow_shutdown(cmyth_conn_t conn);
+
+/**
+ * Inform the MythTV backend that a shutdown is not allowed as long as this
+ * connction is active.
+ * \param conn connection handle
+ * \retval 0 success
+ * \retval <0 error
+ */
+extern int cmyth_conn_block_shutdown(cmyth_conn_t conn);
 /*
  * -----------------------------------------------------------------
  * Event Operations
@@ -716,6 +778,27 @@ extern int cmyth_timestamp_compare(cmyth_timestamp_t ts1,
  */
 extern int cmyth_proginfo_delete_recording(cmyth_conn_t control,
 					   cmyth_proginfo_t prog);
+
+/**
+ * Stop a currently recording program.
+ * \param control control handle
+ * \param prog program handle
+ * \retval <0 error
+ * \retval 0 success
+ */
+extern int cmyth_proginfo_stop_recording(cmyth_conn_t control,
+					 cmyth_proginfo_t prog);
+
+/**
+ * Check a program recording status.
+ * \param control control handle
+ * \param prog proginfo handle
+ * \retval <0 error
+ * \retval 0 not recording
+ * \retval >0 currently recording on this recorder number
+ */
+extern int cmyth_proginfo_check_recording(cmyth_conn_t control,
+					  cmyth_proginfo_t prog);
 
 /**
  * Delete a program such that it may be recorded again.
@@ -1679,20 +1762,6 @@ extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
  * be implemented or removed.
  * @{
  */
-
-/**
- * \b Unimplemented.  Do not use.
- * \note This item may either be implemented or removed in the future.
- */
-extern int cmyth_proginfo_stop_recording(cmyth_conn_t control,
-					 cmyth_proginfo_t prog);
-
-/**
- * \b Unimplemented.  Do not use.
- * \note This item may either be implemented or removed in the future.
- */
-extern int cmyth_proginfo_check_recording(cmyth_conn_t control,
-					  cmyth_proginfo_t prog);
 
 typedef enum {
 	ADJ_DIRECTION_UP = 1,
