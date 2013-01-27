@@ -22,6 +22,7 @@
 .project
 src/mythcat
 src/mythfuse
+src/mythlive
 src/mythping
 src/cppmythtest
 .sconf_temp
