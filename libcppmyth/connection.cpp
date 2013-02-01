@@ -209,3 +209,15 @@ connection::get_event(float timeout)
 		return new event(e);
 	}
 }
+
+livetv*
+connection::start_livetv(void)
+{
+	return new livetv(conn);
+}
+
+recorder*
+connection::get_recorder(int id)
+{
+	return new recorder(conn, id);
+}

@@ -48,6 +48,10 @@ class proginfo;
 class proglist;
 class recording;
 class file;
+class recorder;
+class livetv;
+class chanlist;
+class channel;
 
 class exception : public std::exception {
 public:
@@ -107,6 +111,9 @@ public:
 	event* get_event(float timeout);
 	event* get_event(void) { return get_event(-1); }
 
+	livetv* start_livetv(void);
+	recorder* get_recorder(int id);
+
 	bool hung(void);
 
 	void release(void);
@@ -137,6 +144,7 @@ private:
 class proginfo {
 public:
 	proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which);
+	proginfo(cmyth_recorder_t rec);
 	~proginfo();
 
 	bool equals(class proginfo *other);
@@ -200,6 +208,79 @@ public:
 private:
 	cmyth_file_t f;
 	filetype_t type;
+};
+
+class channel {
+public:
+	channel(cmyth_chanlist_t list, int which);
+	~channel();
+
+	long id(void);
+	const char *name(void);
+	const char *sign(void);
+	const char *string(void);
+
+	void release(void);
+
+private:
+	cmyth_channel_t chan;
+};
+
+class chanlist {
+public:
+	chanlist(cmyth_recorder_t rec);
+	~chanlist();
+
+	int get_count(void);
+	channel* get_channel(int which);
+
+	void release(void);
+
+private:
+	cmyth_chanlist_t list;
+};
+
+class recorder {
+public:
+	recorder(cmyth_conn_t conn, int id, bool attach=false)
+		throw(exception);
+	~recorder();
+
+	cmyth_recorder_t get_recorder(void);
+
+	chanlist* get_chanlist(void);
+
+	void release(void);
+
+private:
+	cmyth_recorder_t rec;
+};
+
+class livetv : public recorder {
+public:
+	livetv(cmyth_conn_t conn, int id=-1)
+		throw(exception);
+	~livetv();
+
+	bool start(void);
+	bool stop(void);
+
+	bool set_channel(const char *name);
+	bool check_channel(const char *name);
+	bool change_channel(cmyth_channeldir_t dir);
+
+	proginfo* get_prog(void);
+	proginfo* get_next_prog(proginfo *prog, cmyth_browsedir_t dir);
+
+	int read(char **file_data, int *bytes_read);
+
+	int recorder_id(void);
+	const char *pathname(void);
+
+	void release(void);
+
+private:
+	cmyth_recorder_t rec;
 };
 
 extern void cmyth_debug_level(int level);

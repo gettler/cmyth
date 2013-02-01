@@ -47,6 +47,10 @@ mythlive = env.Program('mythlive', 'mythlive.c',
 
 targets += [ mythping, mythcat, mythlive ]
 
+if env['CMD_PYSIDEUIC'] != '':
+    pylive = env.PySideUI('pylive.py', 'pylive.ui')
+    targets += [ pylive ]
+
 env.Install(prefix + '/bin', targets)
 env.Install(prefix + '/bin', [ 'mythinfo.py', 'mythplayer.py',
                                'mythtranscode.py' ])

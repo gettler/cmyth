@@ -20,6 +20,7 @@ targets = []
 
 interface = [ 'cmyth.i', Glob('../include/*.h'), Glob('../include/*/*.h') ]
 cmd = 'swig -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
+cmd_python = 'swig -c++ -threads -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_c = 'swig -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_java = 'swig -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
 
@@ -151,7 +152,7 @@ if env['CMD_PYTHON'] != None:
         libs += [ 'python' ]
     python = env.Command([ 'cmyth_python.cpp', 'cmyth.py' ],
                          interface,
-                         [ cmd % ('python', 'cmyth_python.cpp') ])
+                         [ cmd_python % ('python', 'cmyth_python.cpp') ])
     targets += python
     shared = env.SharedLibrary('cmyth_python',
                                [ 'cmyth_python.cpp' ],
@@ -297,9 +298,14 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
                   'SWIGTYPE_p_cmyth_proglist_t',
                   'SWIGTYPE_p_cmyth_proginfo_t',
                   'SWIGTYPE_p_cmyth_event_t',
+                  'SWIGTYPE_p_cmyth_channeldir_t',
+                  'SWIGTYPE_p_cmyth_browsedir_t',
+                  'SWIGTYPE_p_cmyth_recorder_t',
+                  'SWIGTYPE_p_cmyth_chanlist_t',
                   'filetype_t',
                   'connection', 'exception', 'proginfo', 'proglist',
-                  'refmem', 'file', 'event' ]
+                  'refmem', 'file', 'event', 'livetv', 'recorder',
+                  'chanlist', 'channel' ]
         src_list = []
         for i in bases:
             src_list.append(path + '/' + i + '.java')

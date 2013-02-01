@@ -12,6 +12,15 @@ from os import pathsep
 
 import SCons.Builder
 
+def CheckBinary(context, name):
+    context.Message('Checking for %s ...' % name)
+    ret = SCons.Util.WhereIs(name)
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
 def find_binary(self, filename):
     """Find a file in the system search path"""
     path = os.environ['PATH']
@@ -179,6 +188,7 @@ vars.Add('CXXFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
 vars.Add('HAS_MYSQL', '', '')
+vars.Add('CMD_PYSIDEUIC', '', '')
 vars.Update(env)
 
 #
@@ -255,6 +265,10 @@ elif env['HAS_MYSQL'] == '':
 if env['HAS_MYSQL'] == 'yes':
     env.Append(CPPFLAGS = '-DHAS_MYSQL')
 
+conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary })
+env['CMD_PYSIDEUIC'] = conf.CheckBinary('pyside-uic')
+env = conf.Finish()
+
 #
 # SCons builders
 #
@@ -278,6 +292,9 @@ def cat_files(target, source, env):
 
 builder = SCons.Builder.Builder(action = cat_files)
 env.Append(BUILDERS = {"CatFiles" : builder})
+
+builder = SCons.Builder.Builder(action = 'pyside-uic $SOURCE > $TARGET')
+env.Append(BUILDERS = {"PySideUI" : builder})
 
 if env['PLATFORM'] == 'android':
     ndk_tool = Tool('android_ndk', toolpath = [ 'scons' ])

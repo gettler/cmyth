@@ -30,6 +30,13 @@ proginfo::proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which)
 	cbl = cmyth_get_commbreaklist(conn, prog);
 }
 
+proginfo::proginfo(cmyth_recorder_t rec)
+{
+	prog = cmyth_recorder_get_cur_proginfo(rec);
+
+	cbl = NULL;
+}
+
 proginfo::~proginfo()
 {
 	release();
@@ -173,12 +180,20 @@ proginfo::end_str(void)
 int
 proginfo::commercial_count(void)
 {
+	if (cbl == NULL) {
+		return -1;
+	}
+
 	return cbl->commbreak_count;
 }
 
 long long
 proginfo::commercial_start(int which)
 {
+	if (cbl == NULL) {
+		return -1;
+	}
+
 	if (which >= cbl->commbreak_count) {
 		return 0;
 	}
@@ -189,6 +204,10 @@ proginfo::commercial_start(int which)
 long long
 proginfo::commercial_end(int which)
 {
+	if (cbl == NULL) {
+		return -1;
+	}
+
 	if (which >= cbl->commbreak_count) {
 		return 0;
 	}

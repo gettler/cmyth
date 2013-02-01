@@ -14,9 +14,11 @@ name = 'cppmyth'
 major = 0
 minor = 1
 branch = 3
+fork = 0
 
 src = [ 'connection.cpp', 'proginfo.cpp', 'proglist.cpp', 'refmem.cpp',
-        'file.cpp', 'exception.cpp', 'event.cpp' ]
+        'file.cpp', 'exception.cpp', 'event.cpp', 'livetv.cpp', 'recorder.cpp',
+        'chanlist.cpp', 'channel.cpp' ]
 
 if platform == 'android':
     makefile = env.NDK(name, src,

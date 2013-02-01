@@ -25,6 +25,7 @@ src/mythfuse
 src/mythlive
 src/mythping
 src/cppmythtest
+src/pylive.py
 .sconf_temp
 config.log
 cscope.files

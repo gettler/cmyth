@@ -1318,15 +1318,18 @@ cmyth_livetv_set_channel(cmyth_recorder_t rec, char *name)
 			return -1;
 		}
 
-		chainid = rec->rec_livetv_chain->chainid;
+		if (rec->rec_livetv_chain) {
+			chainid = rec->rec_livetv_chain->chainid;
 
-		cmyth_livetv_chain_switch_last(rec);
+			cmyth_livetv_chain_switch_last(rec);
 
-		/* XXX: why do we need to pause here...? */
-		sleep(1);
+			/* XXX: why do we need to pause here...? */
+			sleep(1);
 
-		if (cmyth_livetv_chain_update(rec, chainid, 128*1024) < 0) {
-			return -1;
+			if (cmyth_livetv_chain_update(rec, chainid,
+						      128*1024) < 0) {
+				return -1;
+			}
 		}
 
 		rc = 0;
