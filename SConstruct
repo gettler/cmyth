@@ -178,13 +178,15 @@ env.AddMethod(gen_version, 'GenVersion')
 #
 # Save the build configuration.
 #
+cflags = '-Wall -Wextra -Werror -Wno-unused-parameter'
+
 vars = Variables('cmyth.conf')
 vars.Add('CC', '', 'gcc')
 vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('CROSS', '', '')
-vars.Add('CFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
-vars.Add('CXXFLAGS', '', '-Wall -Wextra -Werror -Wno-unused-parameter')
+vars.Add('CFLAGS', '', cflags)
+vars.Add('CXXFLAGS', '', cflags)
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
 vars.Add('HAS_MYSQL', '', '')
@@ -210,7 +212,8 @@ if 'LD' in os.environ:
     env.Replace(CC = os.environ['LD'])
 
 if 'CFLAGS' in os.environ:
-    env.Replace(CFLAGS = os.environ['CFLAGS'])
+    cflags = os.environ['CFLAGS']
+    env.Replace(CFLAGS = cflags)
 
 if 'LDFLAGS' in os.environ:
     env.Replace(LDFLAGS = os.environ['LDFLAGS'])
@@ -253,6 +256,9 @@ def relpath(p1, p2):
         p = [ '../' * (len(l1)-1) ]
     p = p + l2
     return os.path.join( *p )
+
+if 'DEBUG' in os.environ:
+    env.Replace(CFLAGS = cflags + ' -g -DDEBUG')
 
 if 'NO_MYSQL' in os.environ:
     env.Replace(HAS_MYSQL = 'no')

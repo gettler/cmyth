@@ -101,6 +101,7 @@ extern const char* cmyth_version(void);
  * -----------------------------------------------------------------
  */
 
+struct cmyth_chain;
 struct cmyth_chanlist;
 struct cmyth_channel;
 struct cmyth_conn;
@@ -118,6 +119,8 @@ struct cmyth_timestamp;
  * Opaque structure pointer types
  * -----------------------------------------------------------------
  */
+
+typedef struct cmyth_chain *cmyth_chain_t;
 
 /**
  * \typedef cmyth_chanlist_t
@@ -334,6 +337,13 @@ extern void cmyth_set_dbg_msgcallback(void (*msgcb)(int level,char *));
 extern cmyth_conn_t cmyth_conn_connect_ctrl(char *server,
 					    unsigned short port,
 					    unsigned int buflen, int tcp_rcvbuf);
+
+/**
+ * Create a new control connection based off an existing one.
+ * \param conn control handle
+ * \return control handle
+ */
+extern cmyth_conn_t cmyth_conn_reconnect(cmyth_conn_t conn);
 
 /**
  * Create an event connection to a backend.
@@ -717,18 +727,6 @@ extern char* cmyth_channel_icon(cmyth_channel_t chan);
 
 /**
  * Start recording live TV on a recorder.
- * \note This function should be replaced with something consistent
- *       with the rest of the API.  Probably cmyth_livetv_start() that takes
- *       a cmyth_conn_t argument without all the other arguments.
- */
-extern cmyth_recorder_t cmyth_spawn_live_tv(cmyth_recorder_t rec,
-					    unsigned buflen,
-					    int tcp_rcvbuf,
-					    void (*prog_update_callback)(cmyth_proginfo_t),
-					    char ** err);
-
-/**
- * Start recording live TV on a recorder.
  * \param rec recorder handle
  * \retval <0 error
  * \retval 0 success
@@ -802,6 +800,37 @@ extern int cmyth_livetv_change_channel(cmyth_recorder_t rec,
  * \retval <0 error
  */
 extern int cmyth_livetv_set_channel(cmyth_recorder_t rec, char *name);
+
+/*
+ * -----------------------------------------------------------------
+ * Live TV Chain Operations
+ * -----------------------------------------------------------------
+ */
+
+extern cmyth_chain_t cmyth_livetv_get_chain(cmyth_recorder_t rec);
+
+extern int cmyth_chain_set_current(cmyth_chain_t chain, cmyth_proginfo_t prog);
+
+extern int cmyth_chain_switch(cmyth_chain_t chain, int delta);
+
+extern int cmyth_chain_switch_to(cmyth_chain_t chain, int index);
+
+extern int cmyth_chain_switch_last(cmyth_chain_t chain);
+
+extern int cmyth_chain_get_count(cmyth_chain_t chain);
+
+extern cmyth_file_t cmyth_chain_get_file(cmyth_chain_t chain,
+					 cmyth_proginfo_t prog);
+
+extern cmyth_proginfo_t cmyth_chain_get_prog(cmyth_chain_t chain,
+					     unsigned int which);
+
+extern cmyth_proginfo_t cmyth_chain_get_current(cmyth_chain_t chain);
+
+extern int cmyth_chain_remove_prog(cmyth_chain_t chain, cmyth_proginfo_t prog);
+
+extern int cmyth_chain_set_callback(cmyth_chain_t chain,
+				    void (*callback)(cmyth_proginfo_t prog));
 
 /*
  * -----------------------------------------------------------------
@@ -1877,6 +1906,18 @@ extern void cmyth_file_set_closed_callback(cmyth_file_t file,
  * \deprecated Use of cmyth_get_delete_list is \b deprecated.
  */
 extern int cmyth_get_delete_list(cmyth_conn_t, char *, cmyth_proglist_t);
+
+/**
+ * Start recording live TV on a recorder.
+ * \note This function should be replaced with something consistent
+ *       with the rest of the API.  Probably cmyth_livetv_start() that takes
+ *       a cmyth_conn_t argument without all the other arguments.
+ */
+extern cmyth_recorder_t cmyth_spawn_live_tv(cmyth_recorder_t rec,
+					    unsigned buflen,
+					    int tcp_rcvbuf,
+					    void (*prog_update_callback)(cmyth_proginfo_t),
+					    char ** err);
 
 /**@}*/
 

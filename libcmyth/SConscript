@@ -13,7 +13,7 @@ platform = env['PLATFORM']
 name = 'cmyth'
 major = 0
 minor = 2
-branch = 2
+branch = 4
 fork = 1
 
 version = [ major, minor, branch, fork ]
@@ -21,11 +21,14 @@ version = [ major, minor, branch, fork ]
 libver = env.GenVersion('version.h',
                         VERSION = version)
 
+libs = [ 'refmem' ]
+
 src = [ 'bookmark.c', 'connection.c', 'debug.c', 'event.c',
         'file.c', 'freespace.c', 'keyframe.c',
         'posmap.c', 'proginfo.c', 'proglist.c', 'rec_num.c', 
         'recorder.c', 'ringbuf.c', 'socket.c', 'timestamp.c',
-        'livetv.c', 'commbreak.c', 'version.c', 'chanlist.c', 'channel.c' ]
+        'livetv.c', 'commbreak.c', 'version.c', 'chanlist.c', 'channel.c',
+        'chain.c' ]
 
 if platform == 'android':
     makefile = env.NDK(name, src,
@@ -35,7 +38,6 @@ if platform == 'android':
     env.Install(prefix + '/lib', makefile)
     targets = [ makefile ]
 else:
-    libs = []
     if env['HAS_MYSQL'] == 'yes':
         libs += [ 'mysqlclient' ]
         src += [ 'mythtv_mysql.c', 'mysql_query.c' ]
