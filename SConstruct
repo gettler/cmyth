@@ -371,6 +371,8 @@ env.Depends(swig, [ refmem, cmyth, cppmyth ])
 env.Depends(cmyth, [ refmem ])
 env.Depends(cppmyth, [ refmem, cmyth ])
 
+env.Depends(cmyth, refmem)
+
 #
 # install targets
 #

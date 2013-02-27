@@ -13,7 +13,7 @@ platform = env['PLATFORM']
 name = 'cmyth'
 major = 0
 minor = 2
-branch = 4
+branch = 5
 fork = 1
 
 version = [ major, minor, branch, fork ]
@@ -47,12 +47,14 @@ else:
     static = env.StaticLibrary(name, src,
                                LIBS = libs,
                                LINKFLAGS = env['LDFLAGS'],
+                               LIBPATH = '../librefmem',
                                CPPPATH = [ '../include', '.' ])
 
     shared = env.CMSharedLibrary(name, src,
                                  VERSION = version,
                                  LINKFLAGS = linkflags + ' ' + env['LDFLAGS'],
                                  LIBS = libs,
+                                 LIBPATH = '../librefmem',
                                  CPPPATH = [ '../include', '.' ])
 
     targets = [ static ]
