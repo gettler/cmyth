@@ -1,4 +1,11 @@
-;;;; connection.lisp
+;;;;
+;;;; Copyright (C) 2012-2013, Jon Gettler
+;;;;
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the Lisp Lesser General Public License version 2,
+;;;; as published by the Free Software Foundation and with the following
+;;;; preamble: http://opensource.franz.com/preamble.html
+;;;;
 
 (in-package #:cmyth)
 
@@ -14,14 +21,17 @@
 (defgeneric release (connection))
 (defgeneric connect (connection))
 (defgeneric protocol-version (connection))
-(defgeneric get-proglist (connection))
-(defgeneric get-progs (connection))
+(defgeneric get-progs (connection &key type))
 (defgeneric storage-space (connection))
 (defgeneric get-event (connection &optional number))
 
 (defmethod release ((c connection))
-  (ref_release (conn c))
-  (ref_release (econn c)))
+  (let ((control (conn c))
+	(event (econn c)))
+    (setf (conn c) nil)
+    (setf (econn c) nil)
+    (ref_release control)
+    (ref_release event)))
 
 (defmethod connect ((c connection))
   (let ((cp (cmyth_conn_connect_ctrl (slot-value c 'host)
@@ -41,10 +51,19 @@
 (defmethod protocol-version ((c connection))
   (cmyth_conn_get_protocol_version (conn c)))
 
-(defmethod get-proglist ((c connection))
-  (new-proglist (conn c)))
+(defun morph-list (progs type)
+  (case type
+    ('array
+     (make-array (list (length progs)) :initial-contents progs))
+    ('hash-table
+     (progn
+       (let ((hash (make-hash-table :test 'equal)))
+	 (loop for p in progs do
+	      (setf (gethash (attr p :path-name) hash) p))
+	 hash)))
+    (otherwise progs)))
 
-(defmethod get-progs ((c connection))
+(defmethod get-progs ((c connection) &key (type nil))
   (let* ((plist (cmyth_proglist_get_all_recorded (conn c)))
 	 (progs (if (pointer-eq plist (null-pointer))
 		    nil
@@ -52,7 +71,7 @@
 			 (cmyth_proglist_get_count plist) collect
 			 (new-proginfo (conn c) plist i)))))
     (ref_release plist)
-    progs))
+    (morph-list progs type)))
 
 (defmethod storage-space ((c connection))
   (let ((total (foreign-alloc :long-long))
@@ -74,7 +93,9 @@
 	    (setf (mem-ref tv :int 1) (truncate (* microseconds 1000000)))
 	    (setf to tv)))
 	(let ((rc (cmyth_event_select (econn c) to)))
-	  (cond ((< rc 0)
+	  (cond ((= rc (- 0 EINTR))
+		 (return-from get-event (values nil nil)))
+		((< rc 0)
 		 (return-from get-event (values :CMYTH_EVENT_CLOSE nil)))
 		((= rc 0)
 		 (return-from get-event (values nil nil)))))))
@@ -103,20 +124,41 @@
   (let ((local (gensym)))
     `(let (,conn ,local)
        (unwind-protect
-	    (progn (setq ,local (new-connection ,host)
-			 ,conn ,local)
-		   ,@body)
+	    (progn
+	      (setq ,local (new-connection ,host)
+		    ,conn ,local)
+	      ,@body)
 	 (unless (null ,local)
 	   (release ,local))))))
 
-(defmacro with-progs ((progs conn) &body body)
+(defmacro with-progs ((progs conn &key (type nil)) &body body)
   (let ((local (gensym)))
     `(let (,progs ,local)
        (unwind-protect
-	    (progn (setq ,local (get-progs ,conn)
-			 ,progs ,local)
-		   ,@body)
+	    (progn
+	      (setq ,local (get-progs ,conn :type ,type)
+		    ,progs ,local)
+	      ,@body)
 	 (unless (null ,local)
-	   (loop while (> (length ,local) 0) do
-		(release (pop ,local))))))))
+	   (bt:with-lock-held (*cmyth-lock*)
+	     (for-all (p ,local)
+		  (release p))))))))
 
+(defun prog-count (progs)
+  (if (typep progs 'hash-table)
+      (hash-table-count progs)
+      (length progs)))
+
+(defmacro for-all ((p progs) &body body)
+  `(flet ((for-one (,p)
+	    ,@body))
+     (if (typep ,progs 'list)
+	 (mapc #'for-one ,progs)
+	 (if (typep ,progs 'array)
+	     (map nil #'for-one ,progs)
+	     (if (typep ,progs 'hash-table)
+		 (flet ((for-hash (k v)
+			  (declare (ignore k))
+			  (for-one v)))
+		   (maphash #'for-hash ,progs))
+		 (error 'exception :text "Invalid for-all data type!"))))))

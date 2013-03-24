@@ -388,15 +388,16 @@ if env['CMD_LISP'] != None:
     setup = env.GenASDF('lisp/cmyth.asd',
                         [ 'lisp/package.lisp',
                           lisp,
+                          'lisp/cffi.lisp',
                           'lisp/refmem.lisp', 'lisp/exception.lisp',
                           'lisp/connection.lisp', 'lisp/file.lisp',
-                          'lisp/proginfo.lisp', 'lisp/proglist.lisp' ],
+                          'lisp/proginfo.lisp', 'lisp/debug.lisp' ],
                         ASDF_NAME = 'cmyth',
                         ASDF_DESCRIPTION =
                         'An API for communicating with a MythTV backend.',
                         ASDF_AUTHOR = 'Jon Gettler <gettler@mvpmc.org>',
-                        ASDF_LICENSE = 'LGPL',
-                        ASDF_DEPENDS = [ 'cffi' ],
+                        ASDF_LICENSE = 'LLGPL',
+                        ASDF_DEPENDS = [ 'cffi', 'bordeaux-threads' ],
                         ASDF_DIR = 'swig/lisp')
     targets += setup
 

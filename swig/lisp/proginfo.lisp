@@ -1,4 +1,11 @@
-;;;; proginfo.lisp
+;;;;
+;;;; Copyright (C) 2012-2013, Jon Gettler
+;;;;
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the Lisp Lesser General Public License version 2,
+;;;; as published by the Free Software Foundation and with the following
+;;;; preamble: http://opensource.franz.com/preamble.html
+;;;;
 
 (in-package #:cmyth)
 
@@ -9,16 +16,15 @@
   (:documentation "cmyth program info class"))
 
 (defgeneric release (proginfo))
+(defgeneric copy (proginfo))
 (defgeneric equals (proginfo proginfo2))
 (defgeneric attr (proginfo &rest items))
 (defgeneric attr* (proginfo &rest items))
 (defgeneric port (proginfo))
 (defgeneric seconds (proginfo))
 (defgeneric bytes (proginfo))
-(defgeneric title (proginfo))
-(defgeneric subtitle (proginfo))
-(defgeneric description (proginfo))
-(defgeneric path-name (proginfo))
+(defgeneric start-string (proginfo))
+(defgeneric end-string (proginfo))
 (defgeneric open-file (proginfo &optional thumbnail))
 
 (defun add-hash (p name
@@ -53,6 +59,11 @@
     (ref_release str)
     ret))
 
+(defmacro attr-string (name function)
+  `(defgeneric ,name (proginfo))
+  `(defmethod ,name ((p proginfo))
+     (get-string ,function p)))
+
 (defmethod port ((p proginfo))
   (cmyth_proginfo_port (pinfo p)))
 
@@ -62,17 +73,26 @@
 (defmethod bytes ((p proginfo))
   (cmyth_proginfo_length (pinfo p)))
 
-(defmethod title ((p proginfo))
-  (get-string #'cmyth_proginfo_title p))
+(attr-string description #'cmyth_proginfo_description)
+(attr-string channel-name #'cmyth_proginfo_channame)
+(attr-string path-name #'cmyth_proginfo_pathname)
+(attr-string recording-group #'cmyth_proginfo_recgroup)
+(attr-string subtitle #'cmyth_proginfo_subtitle)
+(attr-string title #'cmyth_proginfo_title)
 
-(defmethod subtitle ((p proginfo))
-  (get-string #'cmyth_proginfo_subtitle p))
+(defmacro time-string (p function)
+  `(let* ((ts (funcall ,function (pinfo ,p)))
+	  (tm (cmyth_timestamp_to_unixtime ts)))
+     (with-foreign-object (tp :long)
+       (setf (mem-aref tp :long) tm)
+       (let ((str (c-ctime tp)))
+	 (subseq str 0 (- (length str) 1))))))
 
-(defmethod description ((p proginfo))
-  (get-string #'cmyth_proginfo_description p))
+(defmethod start-string ((p proginfo))
+  (time-string p #'cmyth_proginfo_start))
 
-(defmethod path-name ((p proginfo))
-  (get-string #'cmyth_proginfo_pathname p))
+(defmethod end-string ((p proginfo))
+  (time-string p #'cmyth_proginfo_end))
 
 (defmethod open-file ((p proginfo) &optional (thumbnail nil))
   (new-file (pinfo p) thumbnail))
@@ -83,16 +103,26 @@
 	 (hash (make-hash-table :test 'equal)))
     (if (pointer-eq pinfo (null-pointer))
 	nil
-	(let ((p (make-instance 'proginfo :pinfo pinfo :cbl cbl :hash hash)))
-	  p))))
+	(make-instance 'proginfo :pinfo pinfo :cbl cbl :hash hash))))
 
-(defmacro with-proginfo ((p proglist which) &body body)
+(defmethod copy ((p proginfo))
+  (let ((progs (ref_hold (pinfo p)))
+	(breaks (ref_hold (cbl p))))
+    (make-instance 'proginfo :pinfo progs :cbl breaks :hash (hash p))))
+
+(defmacro with-progs-reference ((copy progs &key (type nil)) &body body)
   (let ((local (gensym)))
-    `(let (,p ,local)
+    `(let (,copy ,local)
        (unwind-protect
-	    (progn (setq ,local (new-proginfo (conn ,proglist) (plist ,proglist)
-					      ,which)
-			 ,p ,local)
-		   ,@body)
+	    (progn
+	      (bt:with-lock-held (*cmyth-lock*)
+		(setq ,local ,progs)
+		(for-all (p ,local)
+		     (ref_hold (pinfo p))
+		     (ref_hold (cbl p)))
+		(setf ,copy ,local))
+	      ,@body)
 	 (unless (null ,local)
-	   (release ,local))))))
+	   (bt:with-lock-held (*cmyth-lock*)
+	     (for-all (p ,local)
+		  (release p))))))))

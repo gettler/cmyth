@@ -20,10 +20,22 @@ export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 
 export LISPDIR=${SWIGDIR}/lisp/
 
-SBCL=`which sbcl`
-CCL=`which ccl`
-ECL=`which ecl`
-CLISP=`which clisp`
+if [ "$LISP_IMPL" != "" ] ; then
+    if [ "$LISP_IMPL" == "sbcl" ] ; then
+	SBCL=`which sbcl`
+    elif [ "$LISP_IMPL" == "ccl" ] ; then
+	CCL=`which ccl`
+    elif [ "$LISP_IMPL" == "ecl" ] ; then
+	ECL=`which ecl`
+    elif [ "$LISP_IMPL" == "clisp" ] ; then
+	CLISP=`which clisp`
+    fi
+else
+    SBCL=`which sbcl`
+    CCL=`which ccl`
+    ECL=`which ecl`
+    CLISP=`which clisp`
+fi
 
 if [ "$SBCL" != "" ] ; then
     sbcl --noinform --non-interactive --load ${TESTDIR}/test_lisp.lisp $@

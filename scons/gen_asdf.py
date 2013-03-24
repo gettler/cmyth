@@ -10,13 +10,13 @@ import SCons.Util
 
 from SCons.Script import *
  
-class ToolGemspecWarning(SCons.Warnings.Warning):
+class ToolASDFWarning(SCons.Warnings.Warning):
     pass
 
-class GemspecNotFound(ToolGemspecWarning):
+class ASDFNotFound(ToolASDFWarning):
     pass
 
-SCons.Warnings.enableWarningClass(ToolGemspecWarning)
+SCons.Warnings.enableWarningClass(ToolASDFWarning)
 
 def gen_asdf(target, source, env):
     """Generate Common Lisp ASDF builder"""
@@ -41,7 +41,7 @@ def gen_asdf(target, source, env):
         output += [ '  :depends-on (' ]
         for d in env['ASDF_DEPENDS']:
             output += [ '      #:%s' % d ]
-            output += [ '  )' ]
+        output += [ '  )' ]
 
     output += [ '  :components (' ]
 

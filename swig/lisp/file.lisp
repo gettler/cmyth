@@ -1,4 +1,11 @@
-;;;; file.lisp
+;;;;
+;;;; Copyright (C) 2012-2013, Jon Gettler
+;;;;
+;;;; This program is free software; you can redistribute it and/or modify
+;;;; it under the terms of the Lisp Lesser General Public License version 2,
+;;;; as published by the Free Software Foundation and with the following
+;;;; preamble: http://opensource.franz.com/preamble.html
+;;;;
 
 (in-package #:cmyth)
 
@@ -34,9 +41,11 @@
     (loop while (< n total) do
 	 (let ((bytes (cmyth_file_get_block (file f) ptr (- total n))))
 	   (if (< bytes 0)
-	       (return-from read-bytes n))
-	   (incf-pointer ptr bytes)
-	   (incf n bytes)))
+	       (if (\= bytes (- 0 EINTR))
+		   (return-from read-bytes n))
+	       (progn
+		 (incf-pointer ptr bytes)
+		 (incf n bytes)))))
     n))
 
 (defun new-file (p &optional (thumbnail nil))

@@ -1,5 +1,5 @@
 ;;;;
-;;;;  Copyright (C) 2012, Jon Gettler
+;;;;  Copyright (C) 2012-2013, Jon Gettler
 ;;;;  http://www.mvpmc.org/
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or modify
@@ -32,15 +32,15 @@
 (defun test-host (host)
   (handler-case
       (with-connection (conn host)
-	(with-progs (progs conn)
-	  (format t "Protocol Version: ~A~%" (protocol-version conn))
+	(format t "Protocol Version: ~A~%" (protocol-version conn))
+	(with-progs (progs conn :type 'array)
 	  (multiple-value-bind (type data)
 	      (get-event conn)
 	    (format t "Event: ~A \"~A\"~%" type data))
-	  (format t "Recording Count: ~A~%" (length progs))
+	  (format t "Recording Count: ~A~%" (prog-count progs))
 	  (format t "Storage space total: ~A  used: ~A~%"
 		  (storage-space-total conn) (storage-space-used conn))
-	  (loop for p in progs do
+	  (for-all (p progs)
 	       (format t "  ~{~A~^ - ~}~%" (attr p "title" "subtitle"))
 	       (format t "    ~{~A~^ - ~}~%" (attr p "path-name" "bytes"))
 	       (format t "    ~A~%" (attr p "description")))))
@@ -50,53 +50,51 @@
 (defun test-file (host)
   (handler-case
       (with-connection (conn host)
-	(with-proglist (pl conn)
-	  (with-proginfo (p pl 0)
-	    (with-open-program (f p)
-	      (seek f 0)
-	      (let* ((m (md5:make-md5-state))
-		     (buflen (buflen f))
-		     (b (make-array (* 5 buflen)
-				    :element-type '(unsigned-byte 8))))
-		(dotimes (i 5)
-		  (let ((len (read-bytes f)))
-		    (dotimes (j len)
-		      (setf (aref b (+ j (* i buflen)))
-			    (cffi:mem-aref (buf f) :unsigned-char j)))))
-		(format t "MD5: ")
-		(md5:update-md5-state m b)
-		(loop for x across (md5:finalize-md5-state m) do
-		     (format t "~(~2,'0X~)" x))
-		(format t "~%"))))))
+	(with-progs (progs conn)
+	  (with-open-program (f (nth 0 progs))
+	    (seek f 0)
+	    (let* ((m (md5:make-md5-state))
+		   (buflen (buflen f))
+		   (b (make-array (* 5 buflen)
+				  :element-type '(unsigned-byte 8))))
+	      (dotimes (i 5)
+		(let ((len (read-bytes f)))
+		  (dotimes (j len)
+		    (setf (aref b (+ j (* i buflen)))
+			  (cffi:mem-aref (buf f) :unsigned-char j)))))
+	      (format t "MD5: ")
+	      (md5:update-md5-state m b)
+	      (loop for x across (md5:finalize-md5-state m) do
+		   (format t "~(~2,'0X~)" x))
+	      (format t "~%")))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
 
 (defun test-thumbnail (host)
   (handler-case
       (with-connection (conn host)
-	(with-proglist (pl conn)
-	  (with-proginfo (p pl 0)
-	    (with-open-thumbnail (f p)
-	      (seek f 0)
-	      (let* ((m (md5:make-md5-state))
-		     (buflen (buflen f))
-		     (size 0)
-		     (b (make-array (* 5 buflen)
-				    :element-type '(unsigned-byte 8))))
-		(dotimes (i 5)
-		  (let ((len (read-bytes f)))
-		    (if (> len 0)
-			(progn
-			  (incf size len)
-			  (dotimes (j len)
-			    (setf (aref b (+ j (* i buflen)))
-				  (cffi:mem-aref (buf f) :unsigned-char j)))))))
-		(format t "Thumbnail image size: ~A~%" size)
-		(format t "MD5: ")
-		(md5:update-md5-state m (subseq b 0 size))
-		(loop for x across (md5:finalize-md5-state m) do
-		     (format t "~(~2,'0X~)" x))
-		(format t "~%"))))))
+	(with-progs (progs conn)
+	  (with-open-thumbnail (f (nth 0 progs))
+	    (seek f 0)
+	    (let* ((m (md5:make-md5-state))
+		   (buflen (buflen f))
+		   (size 0)
+		   (b (make-array (* 5 buflen)
+				  :element-type '(unsigned-byte 8))))
+	      (dotimes (i 5)
+		(let ((len (read-bytes f)))
+		  (if (> len 0)
+		      (progn
+			(incf size len)
+			(dotimes (j len)
+			  (setf (aref b (+ j (* i buflen)))
+				(cffi:mem-aref (buf f) :unsigned-char j)))))))
+	      (format t "Thumbnail image size: ~A~%" size)
+	      (format t "MD5: ")
+	      (md5:update-md5-state m (subseq b 0 size))
+	      (loop for x across (md5:finalize-md5-state m) do
+		   (format t "~(~2,'0X~)" x))
+	      (format t "~%")))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
 
@@ -105,7 +103,7 @@
 	 (nth 1
 	      #+sbcl *posix-argv*
 	      #+clisp ext:*args*
-	      #+ccl (list "ccl" (nth 2 ccl::command-line-arguments))
+	      #+ccl (list "ccl" (nth 6 (ccl::command-line-arguments)))
 	      #+ecl (list "ecl" (si:argv (- (si:argc) 1))))))
 
     (if (eq host nil)
