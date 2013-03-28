@@ -23,17 +23,17 @@
 
 using namespace cmyth;
 
-proginfo::proginfo(cmyth_conn_t conn, cmyth_proglist_t list, int which)
+proginfo::proginfo(cmyth_conn_t control, cmyth_proglist_t list, int which)
 {
 	prog = cmyth_proglist_get_item(list, which);
-
-	cbl = cmyth_get_commbreaklist(conn, prog);
+	conn = (cmyth_conn_t)ref_hold(control);
+	cbl = NULL;
 }
 
 proginfo::proginfo(cmyth_recorder_t rec)
 {
 	prog = cmyth_recorder_get_cur_proginfo(rec);
-
+	conn = NULL;
 	cbl = NULL;
 }
 
@@ -48,6 +48,10 @@ proginfo::release(void)
 	if (prog) {
 		ref_release(prog);
 		prog = NULL;
+	}
+	if (conn) {
+		ref_release(conn);
+		conn = NULL;
 	}
 	if (cbl) {
 		ref_release(cbl);
@@ -177,10 +181,29 @@ proginfo::end_str(void)
 	return str;
 }
 
+bool
+proginfo::get_cbl(void)
+{
+	if (cbl) {
+		return true;
+	}
+	if ((conn == NULL) || (prog == NULL)) {
+		return false;
+	}
+
+	cbl = cmyth_get_commbreaklist(conn, prog);
+
+	if (cbl) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
 int
 proginfo::commercial_count(void)
 {
-	if (cbl == NULL) {
+	if (get_cbl() == false) {
 		return -1;
 	}
 
@@ -190,7 +213,7 @@ proginfo::commercial_count(void)
 long long
 proginfo::commercial_start(int which)
 {
-	if (cbl == NULL) {
+	if (get_cbl() == false) {
 		return -1;
 	}
 
@@ -204,7 +227,7 @@ proginfo::commercial_start(int which)
 long long
 proginfo::commercial_end(int which)
 {
-	if (cbl == NULL) {
+	if (get_cbl() == false) {
 		return -1;
 	}
 

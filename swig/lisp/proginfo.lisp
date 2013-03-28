@@ -33,7 +33,8 @@
 
 (defmethod release ((p proginfo))
   (ref_release (pinfo p))
-  (ref_release (cbl p)))
+  (if (cbl p)
+      (ref_release (cbl p))))
 
 (defmethod equals ((p1 proginfo) (p2 proginfo))
   (if (= (cmyth_proginfo_compare (pinfo p1) (pinfo p2)) 0)
@@ -99,11 +100,10 @@
 
 (defun new-proginfo (conn plist which)
   (let* ((pinfo (cmyth_proglist_get_item plist which))
-	 (cbl (cmyth_get_commbreaklist conn pinfo))
 	 (hash (make-hash-table :test 'equal)))
     (if (pointer-eq pinfo (null-pointer))
 	nil
-	(make-instance 'proginfo :pinfo pinfo :cbl cbl :hash hash))))
+	(make-instance 'proginfo :pinfo pinfo :cbl nil :hash hash))))
 
 (defmethod copy ((p proginfo))
   (let ((progs (ref_hold (pinfo p)))
@@ -119,7 +119,9 @@
 		(setq ,local ,progs)
 		(for-all (p ,local)
 		     (ref_hold (pinfo p))
-		     (ref_hold (cbl p)))
+		     (let ((c (cbl p)))
+		       (when c
+			 (ref_hold c))))
 		(setf ,copy ,local))
 	      ,@body)
 	 (unless (null ,local)

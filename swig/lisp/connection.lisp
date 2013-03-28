@@ -65,10 +65,10 @@
 
 (defmethod get-progs ((c connection) &key (type nil))
   (let* ((plist (cmyth_proglist_get_all_recorded (conn c)))
+	 (count (cmyth_proglist_get_count plist))
 	 (progs (if (pointer-eq plist (null-pointer))
 		    nil
-		    (loop for i from 0 below
-			 (cmyth_proglist_get_count plist) collect
+		    (loop for i from 0 below count collect
 			 (new-proginfo (conn c) plist i)))))
     (ref_release plist)
     (morph-list progs type)))

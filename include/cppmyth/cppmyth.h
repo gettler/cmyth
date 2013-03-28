@@ -189,7 +189,10 @@ public:
 
 private:
 	cmyth_proginfo_t prog;
+	cmyth_conn_t conn;
 	cmyth_commbreaklist_t cbl;
+
+	bool get_cbl(void);
 };
 
 class file {
