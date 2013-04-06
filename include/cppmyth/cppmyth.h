@@ -42,6 +42,12 @@ typedef enum {
 	FILETYPE_THUMBNAIL,
 } filetype_t;
 
+typedef enum {
+	PROGTYPE_RECORDED = 0,
+	PROGTYPE_PENDING,
+	PROGTYPE_SCHEDULED,
+} progtype_t;
+
 class event;
 class connection;
 class proginfo;
@@ -103,7 +109,7 @@ public:
 	~connection();
 
 	int protocol_version(void);
-	proglist* get_proglist(void);
+	proglist* get_proglist(progtype_t type = PROGTYPE_RECORDED);
 
 	long long storage_space_total(void);
 	long long storage_space_used(void);
@@ -128,7 +134,8 @@ private:
 
 class proglist {
 public:
-	proglist(cmyth_conn_t conn);
+	proglist(cmyth_conn_t conn, progtype_t type = PROGTYPE_RECORDED)
+		throw(exception);
 	~proglist();
 
 	int get_count(void);

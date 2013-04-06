@@ -23,8 +23,11 @@
 (defgeneric port (proginfo))
 (defgeneric seconds (proginfo))
 (defgeneric bytes (proginfo))
+(defgeneric start (proginfo))
+(defgeneric end (proginfo))
 (defgeneric start-string (proginfo))
 (defgeneric end-string (proginfo))
+(defgeneric channel-id (proginfo))
 (defgeneric open-file (proginfo &optional thumbnail))
 
 (defun add-hash (p name
@@ -74,16 +77,25 @@
 (defmethod bytes ((p proginfo))
   (cmyth_proginfo_length (pinfo p)))
 
+(defmethod channel-id ((p proginfo))
+  (cmyth_proginfo_chan_id (pinfo p)))
+
 (attr-string description #'cmyth_proginfo_description)
 (attr-string channel-name #'cmyth_proginfo_channame)
+(attr-string channel-sign #'cmyth_proginfo_chansign)
 (attr-string path-name #'cmyth_proginfo_pathname)
 (attr-string recording-group #'cmyth_proginfo_recgroup)
 (attr-string subtitle #'cmyth_proginfo_subtitle)
 (attr-string title #'cmyth_proginfo_title)
 
-(defmacro time-string (p function)
+(defmacro time-int (p function)
   `(let* ((ts (funcall ,function (pinfo ,p)))
 	  (tm (cmyth_timestamp_to_unixtime ts)))
+     (ref-release ts)
+     tm))
+
+(defmacro time-string (p function)
+  `(let ((tm (time-int ,p ,function)))
      (with-foreign-object (tp :long)
        (setf (mem-aref tp :long) tm)
        (let ((str (c-ctime tp)))
@@ -94,6 +106,12 @@
 
 (defmethod end-string ((p proginfo))
   (time-string p #'cmyth_proginfo_end))
+
+(defmethod start ((p proginfo))
+  (time-int p #'cmyth_proginfo_start))
+
+(defmethod end ((p proginfo))
+  (time-int p #'cmyth_proginfo_end))
 
 (defmethod open-file ((p proginfo) &optional (thumbnail nil))
   (new-file (pinfo p) thumbnail))

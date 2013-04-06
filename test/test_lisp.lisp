@@ -33,24 +33,39 @@
   (handler-case
       (with-connection (conn host)
 	(format t "Protocol Version: ~A~%" (protocol-version conn))
-	(with-progs (progs conn :type 'array)
-	  (multiple-value-bind (type data)
-	      (get-event conn)
-	    (format t "Event: ~A \"~A\"~%" type data))
+	(multiple-value-bind (type data)
+	    (get-event conn)
+	  (format t "Event: ~A \"~A\"~%" type data))
+	(with-recorded (progs conn :type 'array)
 	  (format t "Recording Count: ~A~%" (prog-count progs))
 	  (format t "Storage space total: ~A  used: ~A~%"
 		  (storage-space-total conn) (storage-space-used conn))
 	  (for-all (p progs)
-	       (format t "  ~{~A~^ - ~}~%" (attr p "title" "subtitle"))
-	       (format t "    ~{~A~^ - ~}~%" (attr p "path-name" "bytes"))
-	       (format t "    ~A~%" (attr p "description")))))
+	       (format t "  ~{~A~^ - ~}~%" (attr p :title :subtitle))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :path-name :bytes))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :start :end))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :start-string :end-string))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :channel-name
+						   :channel-sign :channel-id))
+	       (format t "    ~A~%" (attr p :description))))
+	(with-pending (progs conn :type 'array)
+	  (format t "Pending Count: ~A~%" (prog-count progs))
+	  (for-all (p progs)
+	       (format t "  ~{~A~^ - ~}~%" (attr p :title :subtitle))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :start-string :end-string))
+	       (format t "    ~{~A~^ - ~}~%" (attr p :channel-name
+						   :channel-sign :channel-id))))
+	(with-scheduled (progs conn :type 'array)
+	  (format t "Scheduled Count: ~A~%" (prog-count progs))
+	  (for-all (p progs)
+	       (format t "  ~A~%" (attr p :title)))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))
 
 (defun test-file (host)
   (handler-case
       (with-connection (conn host)
-	(with-progs (progs conn)
+	(with-recorded (progs conn)
 	  (with-open-program (f (nth 0 progs))
 	    (seek f 0)
 	    (let* ((m (md5:make-md5-state))
@@ -73,7 +88,7 @@
 (defun test-thumbnail (host)
   (handler-case
       (with-connection (conn host)
-	(with-progs (progs conn)
+	(with-recorded (progs conn)
 	  (with-open-thumbnail (f (nth 0 progs))
 	    (seek f 0)
 	    (let* ((m (md5:make-md5-state))
@@ -92,8 +107,9 @@
 	      (format t "Thumbnail image size: ~A~%" size)
 	      (format t "MD5: ")
 	      (md5:update-md5-state m (subseq b 0 size))
-	      (loop for x across (md5:finalize-md5-state m) do
-		   (format t "~(~2,'0X~)" x))
+	      (format t "~{~a~^~}"
+		      (loop for x across (md5:finalize-md5-state m) collect
+			   (format nil "~(~2,'0X~)" x)))
 	      (format t "~%")))))
     (exception (e)
       (format t "Exception: ~A~%" (text e)))))

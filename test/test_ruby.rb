@@ -1,6 +1,6 @@
 #!/usr/bin/ruby
 #
-#  Copyright (C) 2012, Jon Gettler
+#  Copyright (C) 2012-2013, Jon Gettler
 #  http://www.mvpmc.org/
 #
 # This program is free software; you can redistribute it and/or modify
@@ -71,8 +71,41 @@ def test_host(host)
     puts("Connection is hung!")
   end
 
-  conn.release()
   list.release()
+
+  list = conn.get_proglist(Cmyth::PROGTYPE_PENDING)
+  count = list.get_count()
+  puts "Pending count: #{count}"
+
+  for i in 0..count-1
+    prog = list.get_prog(i)
+    title = prog.title()
+    subtitle = prog.subtitle()
+    channel_sign = prog.channel_sign()
+    channel_name = prog.channel_name()
+    channel_id = prog.channel_id()
+    puts("  #{title} - #{subtitle}")
+    puts("    #{prog.start_str()} - #{prog.end_str()}")
+    puts("    #{channel_sign} #{channel_name} #{channel_id}")
+    prog.release()
+  end
+
+  list.release()
+
+  list = conn.get_proglist(Cmyth::PROGTYPE_SCHEDULED)
+  count = list.get_count()
+  puts "Scheduled count: #{count}"
+
+  for i in 0..count-1
+    prog = list.get_prog(i)
+    title = prog.title()
+    puts("  #{title}")
+    prog.release()
+  end
+
+  list.release()
+
+  conn.release()
 end
 
 def test_file(host)

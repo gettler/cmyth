@@ -1,6 +1,6 @@
 <?php
 /*
- *  Copyright (C) 2012, Jon Gettler
+ *  Copyright (C) 2012-2013, Jon Gettler
  *  http://www.mvpmc.org/
  *
  * This program is free software; you can redistribute it and/or modify
@@ -66,8 +66,32 @@ function test_host($host) {
 		echo "Connection is hung!\n";
 	}
 
-	$conn->release();
 	$list->release();
+
+	$list = $conn->get_proglist(PROGTYPE_PENDING);
+	echo "Pending count: " . $list->get_count() . "\n";
+
+	for ($i=0; $i<$list->get_count(); $i++) {
+		$prog = $list->get_prog($i);
+		echo "  " . $prog->title() . " - " . $prog->subtitle() . "\n";
+		echo "    " . $prog->start_str() . " - " . $prog->end_str() . "\n";
+		$prog->release();
+	}
+
+	$list->release();
+
+	$list = $conn->get_proglist(PROGTYPE_SCHEDULED);
+	echo "Scheduled count: " . $list->get_count() . "\n";
+
+	for ($i=0; $i<$list->get_count(); $i++) {
+		$prog = $list->get_prog($i);
+		echo "  " . $prog->title() . "\n";
+		$prog->release();
+	}
+
+	$list->release();
+
+	$conn->release();
 }
 
 function test_file($host) {

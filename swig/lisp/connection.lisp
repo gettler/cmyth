@@ -21,7 +21,9 @@
 (defgeneric release (connection))
 (defgeneric connect (connection))
 (defgeneric protocol-version (connection))
-(defgeneric get-progs (connection &key type))
+(defgeneric get-recorded (connection &key type))
+(defgeneric get-pending (connection &key type))
+(defgeneric get-scheduled (connection &key type))
 (defgeneric storage-space (connection))
 (defgeneric get-event (connection &optional number))
 
@@ -63,15 +65,24 @@
 	 hash)))
     (otherwise progs)))
 
-(defmethod get-progs ((c connection) &key (type nil))
-  (let* ((plist (cmyth_proglist_get_all_recorded (conn c)))
-	 (count (cmyth_proglist_get_count plist))
-	 (progs (if (pointer-eq plist (null-pointer))
-		    nil
-		    (loop for i from 0 below count collect
-			 (new-proginfo (conn c) plist i)))))
-    (ref_release plist)
-    (morph-list progs type)))
+(defmacro get-progs (c func type)
+  `(let* ((plist (funcall ,func (conn ,c)))
+	  (count (cmyth_proglist_get_count plist))
+	  (progs (if (pointer-eq plist (null-pointer))
+		     nil
+		     (loop for i from 0 below count collect
+			  (new-proginfo (conn ,c) plist i)))))
+     (ref_release plist)
+     (morph-list progs ,type)))
+
+(defmethod get-recorded ((c connection) &key (type nil))
+  (get-progs c 'cmyth_proglist_get_all_recorded type))
+
+(defmethod get-pending ((c connection) &key (type nil))
+  (get-progs c 'cmyth_proglist_get_all_pending type))
+
+(defmethod get-scheduled ((c connection) &key (type nil))
+  (get-progs c 'cmyth_proglist_get_all_scheduled type))
 
 (defmethod storage-space ((c connection))
   (let ((total (foreign-alloc :long-long))
@@ -131,18 +142,30 @@
 	 (unless (null ,local)
 	   (release ,local))))))
 
-(defmacro with-progs ((progs conn &key (type nil)) &body body)
+(defmacro with-progs ((func progs conn type) &body body)
   (let ((local (gensym)))
     `(let (,progs ,local)
        (unwind-protect
 	    (progn
-	      (setq ,local (get-progs ,conn :type ,type)
+	      (setq ,local (funcall ,func ,conn :type ,type)
 		    ,progs ,local)
 	      ,@body)
 	 (unless (null ,local)
 	   (bt:with-lock-held (*cmyth-lock*)
 	     (for-all (p ,local)
 		  (release p))))))))
+
+(defmacro with-recorded ((progs conn &key (type nil)) &body body)
+  `(with-progs ('get-recorded ,progs ,conn ,type)
+     ,@body))
+
+(defmacro with-pending ((progs conn &key (type nil)) &body body)
+  `(with-progs ('get-pending ,progs ,conn ,type)
+     ,@body))
+
+(defmacro with-scheduled ((progs conn &key (type nil)) &body body)
+  `(with-progs ('get-scheduled ,progs ,conn ,type)
+     ,@body))
 
 (defun prog-count (progs)
   (if (typep progs 'hash-table)

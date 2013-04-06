@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-#  Copyright (C) 2012, Jon Gettler
+#  Copyright (C) 2012-2013, Jon Gettler
 #  http://www.mvpmc.org/
 #
 # This program is free software; you can redistribute it and/or modify
@@ -27,20 +27,22 @@ def test_host(host):
 
     print 'Protocol version: %d' % conn.protocol_version()
 
-    list = conn.get_proglist()
+    recorded = conn.get_proglist()
+    pending = conn.get_proglist(cmyth.PROGTYPE_PENDING)
+    scheduled = conn.get_proglist(cmyth.PROGTYPE_SCHEDULED)
 
     e = conn.get_event(0.1)
     if e:
         print 'Event: "%s" (%d) "%s"' % (e.name(), e.type(), e.message())
 
-    print 'Recording count: %d' % list.get_count()
+    print 'Recording count: %d' % recorded.get_count()
 
     total = conn.storage_space_total()
     used = conn.storage_space_used()
     print 'Storage space total: %d  used: %d' % (total, used)
 
-    for i in range(list.get_count()):
-        prog = list.get_prog(i)
+    for i in range(recorded.get_count()):
+        prog = recorded.get_prog(i)
         print '  %s - %s' % (prog.title(), prog.subtitle())
         print '    %s %d' % (prog.pathname(), prog.length())
         print '    %d - %d' % (prog.start(), prog.end())
@@ -48,6 +50,21 @@ def test_host(host):
         print '    %s - %s - %d' % (prog.channel_sign(), prog.channel_name(),
                                     prog.channel_id())
         print '    %s' % prog.description()
+
+    print 'Pending count: %d' % pending.get_count()
+
+    for i in range(pending.get_count()):
+        prog = pending.get_prog(i)
+        print '  %s - %s' % (prog.title(), prog.subtitle())
+        print '    %s - %s' % (prog.start_str(), prog.end_str())
+        print '    %s - %s - %d' % (prog.channel_sign(), prog.channel_name(),
+                                    prog.channel_id())
+
+    print 'Scheduled count: %d' % scheduled.get_count()
+
+    for i in range(scheduled.get_count()):
+        prog = scheduled.get_prog(i)
+        print '  %s' % prog.title()
 
     if conn.hung():
         print 'Connection is hung!'

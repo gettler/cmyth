@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2012, Jon Gettler
+ *  Copyright (C) 2012-2013, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -99,9 +99,9 @@ connection::protocol_version(void)
 }
 
 proglist*
-connection::get_proglist(void)
+connection::get_proglist(progtype_t type)
 {
-	return new proglist(conn);
+	return new proglist(conn, type);
 }
 
 long long

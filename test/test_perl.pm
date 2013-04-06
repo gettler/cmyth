@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-#  Copyright (C) 2012, Jon Gettler
+#  Copyright (C) 2012-2013, Jon Gettler
 #  http://www.mvpmc.org/
 #
 # This program is free software; you can redistribute it and/or modify
@@ -75,6 +75,39 @@ sub test_host {
     }
 
     $list->release();
+
+    my $list = $conn->get_proglist($cmyth::PROGTYPE_PENDING);
+    my $count = $list->get_count();
+    print "Pending count: $count\n";
+
+    for ($i=0; $i<$count; $i++) {
+	my $prog = $list->get_prog($i);
+
+	my $title = $prog->title();
+	my $subtitle = $prog->subtitle();
+	my $pathname = $prog->pathname();
+	print "  $title - $subtitle\n";
+
+	$prog->release();
+    }
+
+    $list->release();
+
+    my $list = $conn->get_proglist($cmyth::PROGTYPE_SCHEDULED);
+    my $count = $list->get_count();
+    print "Scheduled count: $count\n";
+
+    for ($i=0; $i<$count; $i++) {
+	my $prog = $list->get_prog($i);
+
+	my $title = $prog->title();
+	print "  $title\n";
+
+	$prog->release();
+    }
+
+    $list->release();
+
     $conn->release();
 }
 

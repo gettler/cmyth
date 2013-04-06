@@ -11,8 +11,9 @@
   (:use #:cl #:cffi)
   (:export
    ;; macros
-   #:with-connection #:with-progs #:with-proginfo
+   #:with-connection
    #:with-open-program #:with-open-thumbnail
+   #:with-recorded #:with-pending #:with-scheduled
    #:with-progs-reference
    #:for-all
    ;; common methods
@@ -20,7 +21,8 @@
    ;; refmem functions
    #:ref-refs #:ref-bytes #:ref-release
    ;; connection class
-   #:new-connection #:protocol-version #:get-progs
+   #:new-connection #:protocol-version
+   #:get-recorded #:get-pending #:get-scheduled
    #:storage-space-total #:storage-space-used #:get-event
    #:prog-count
    ;; proginfo class
@@ -46,4 +48,4 @@
 (cffi:use-foreign-library librefmem)
 (cffi:use-foreign-library libcmyth)
 
-(defvar *cmyth-lock* (bordeaux-threads:make-lock "cmyth"))
+(defvar *cmyth-lock* (bt:make-lock "cmyth"))

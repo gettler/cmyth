@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2012, Jon Gettler
+//  Copyright (C) 2012-2013, Jon Gettler
 //  http://www.mvpmc.org/
 //
 // This program is free software; you can redistribute it and/or modify
@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import org.mvpmc.cmyth.java.refmem;
 
 import org.mvpmc.cmyth.java.filetype_t;
+import org.mvpmc.cmyth.java.progtype_t;
 import org.mvpmc.cmyth.java.cmythConstants;
 import org.mvpmc.cmyth.java.connection;
 import org.mvpmc.cmyth.java.proglist;
@@ -80,8 +81,40 @@ public class test_java {
 			System.out.format("Connection is hung!\n");
 		}
 
-		conn.release();
 		list.release();
+
+		list = conn.get_proglist(progtype_t.PROGTYPE_PENDING);
+
+		System.out.format("Pending count: %d%n", list.get_count());
+
+		for (i=0; i<list.get_count(); i++) {
+			prog = list.get_prog(i);
+			System.out.format("  %s - %s%n",
+					  prog.title(), prog.subtitle());
+			System.out.format("    %s - %s%n",
+					  prog.start_str(), prog.end_str());
+			System.out.format("    %s %s %d%n",
+					  prog.channel_sign(),
+					  prog.channel_name(),
+					  prog.channel_id());
+			prog.release();
+		}
+
+		list.release();
+
+		list = conn.get_proglist(progtype_t.PROGTYPE_SCHEDULED);
+
+		System.out.format("Scheduled count: %d%n", list.get_count());
+
+		for (i=0; i<list.get_count(); i++) {
+			prog = list.get_prog(i);
+			System.out.format("  %s%n", prog.title());
+			prog.release();
+		}
+
+		list.release();
+
+		conn.release();
 	}
 
 	public static void test_file(String host) {

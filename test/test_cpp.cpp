@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2012, Jon Gettler
+//  Copyright (C) 2012-2013, Jon Gettler
 //  http://www.mvpmc.org/
 //
 // This program is free software; you can redistribute it and/or modify
@@ -101,6 +101,59 @@ void test_host(const char *host)
 	}
 
 	delete(list);
+
+	list = conn->get_proglist(PROGTYPE_PENDING);
+	printf("Pending count: %d\n", list->get_count());
+
+	for (int i=0; i<list->get_count(); i++) {
+		const char *title, *subtitle;
+		const char *chansign, *channame;
+
+		prog = list->get_prog(i);
+
+		title = prog->title();
+		subtitle = prog->subtitle();
+		chansign = prog->channel_sign();
+		channame = prog->channel_name();
+
+		printf("  %s - %s\n", title, subtitle);
+		start = prog->start_str();
+		end = prog->end_str();
+		printf("    %s - %s\n", start, end);
+		printf("    %s %s %ld\n",
+		       chansign, channame, prog->channel_id());
+
+		ref_release((void*)start);
+		ref_release((void*)end);
+		ref_release((void*)title);
+		ref_release((void*)subtitle);
+		ref_release((void*)chansign);
+		ref_release((void*)channame);
+
+		delete(prog);
+	}
+
+	delete(list);
+
+	list = conn->get_proglist(PROGTYPE_SCHEDULED);
+	printf("Scheduled count: %d\n", list->get_count());
+
+	for (int i=0; i<list->get_count(); i++) {
+		const char *title;
+
+		prog = list->get_prog(i);
+
+		title = prog->title();
+
+		printf("  %s\n", title);
+
+		ref_release((void*)title);
+
+		delete(prog);
+	}
+
+	delete(list);
+
 	delete(conn);
 }
 

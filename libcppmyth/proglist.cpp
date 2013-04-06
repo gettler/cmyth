@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2012, Jon Gettler
+ *  Copyright (C) 2012-2013, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -23,11 +23,26 @@
 
 using namespace cmyth;
 
-proglist::proglist(cmyth_conn_t c)
+proglist::proglist(cmyth_conn_t c, progtype_t type) throw(exception)
 {
 	conn = c;
+
+	switch (type) {
+	case PROGTYPE_RECORDED:
+		list = cmyth_proglist_get_all_recorded(conn);
+		break;
+	case PROGTYPE_PENDING:
+		list = cmyth_proglist_get_all_pending(conn);
+		break;
+	case PROGTYPE_SCHEDULED:
+		list = cmyth_proglist_get_all_scheduled(conn);
+		break;
+	default:
+		throw exception("Invalid program type!");
+		break;
+	}
+
 	ref_hold(conn);
-	list = cmyth_proglist_get_all_recorded(conn);
 }
 
 proglist::~proglist()

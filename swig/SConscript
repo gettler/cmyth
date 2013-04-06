@@ -302,7 +302,7 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
                   'SWIGTYPE_p_cmyth_browsedir_t',
                   'SWIGTYPE_p_cmyth_recorder_t',
                   'SWIGTYPE_p_cmyth_chanlist_t',
-                  'filetype_t',
+                  'filetype_t', 'progtype_t',
                   'connection', 'exception', 'proginfo', 'proglist',
                   'refmem', 'file', 'event', 'livetv', 'recorder',
                   'chanlist', 'channel' ]
