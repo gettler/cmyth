@@ -84,7 +84,7 @@ def shlibsuffix(self, major=-1, minor=-1, branch=-1, fork=-1):
 
 def soname(self, name, major=0, minor=0, branch=0, fork=0):
     """Create the linker shared object argument for gcc for this OS."""
-    if fork > 0:
+    if fork > 0 and sys.platform != 'darwin':
         version = '%d.%d.%d.%d' % (major, minor, branch, fork)
     else:
         version = '%d.%d.%d' % (major, minor, branch)
