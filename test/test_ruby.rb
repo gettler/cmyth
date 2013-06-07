@@ -154,6 +154,32 @@ def test_thumbnail(host)
   conn.release()
 end
 
+def test_perf(host)
+  conn = Cmyth::Connection.new(host)
+  list = conn.get_proglist()
+  prog = list.get_prog(0)
+  file = prog.open()
+  file.seek(0)
+  offset = 0
+  start = Time.now
+  while offset < 67108864
+    rc,buf = file.read()
+    if rc < 0 or buf.length == 0
+      break
+    end
+    offset += buf.length
+  end
+  finish = Time.now
+  duration = finish - start
+  mbps = (offset * 8) / duration / 1000000
+  puts "Perf: read #{offset} bytes in %5.2f seconds (%5.2f mb/s)" %
+    [duration, mbps]
+  file.release()
+  prog.release()
+  list.release()
+  conn.release()
+end
+
 if ARGV.length > 0
   host = ARGV[0]
 else
@@ -182,6 +208,12 @@ end
 
 begin
   test_thumbnail(host)
+rescue Cmyth::Exception => e
+  puts("Exception: #{e.what}")
+end
+
+begin
+  test_perf(host)
 rescue Cmyth::Exception => e
   puts("Exception: #{e.what}")
 end

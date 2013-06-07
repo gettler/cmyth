@@ -397,7 +397,7 @@ if env['CMD_LISP'] != None:
                         'An API for communicating with a MythTV backend.',
                         ASDF_AUTHOR = 'Jon Gettler <gettler@mvpmc.org>',
                         ASDF_LICENSE = 'LLGPL',
-                        ASDF_DEPENDS = [ 'cffi', 'bordeaux-threads' ],
+                        ASDF_DEPENDS = [ 'cffi', 'trivial-garbage' ],
                         ASDF_DIR = 'swig/lisp')
     targets += setup
 

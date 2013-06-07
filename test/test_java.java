@@ -217,6 +217,45 @@ public class test_java {
 		list.release();
 	}
 
+	public static void test_perf(String host) {
+		connection conn;
+		proglist list;
+		proginfo prog;
+		file file;
+		ByteBuffer bb;
+		int len;
+		int offset = 0;
+
+		conn = new connection(host);
+		list = conn.get_proglist();
+		prog = list.get_prog(0);
+		file = prog.open();
+		file.seek(0);
+
+		long start = System.currentTimeMillis();
+
+		while (offset < 67108864) {
+			bb = ByteBuffer.allocateDirect(cmythConstants.DEFAULT_BUFLEN);
+			len = file.read(bb);
+			if (len <= 0) {
+				break;
+			}
+
+			offset += len;
+		}
+
+		long end = System.currentTimeMillis();
+
+		double duration = (end - start) / 1000.0;
+
+		System.out.format("Perf: read %d bytes in %5.2f seconds (%5.2f mb/s)%n", offset, duration, (offset * 8) / duration / 1000000.0);
+
+		file.release();
+		prog.release();
+		conn.release();
+		list.release();
+	}
+
 	public static void main(String[] args) {
 		String host;
 
@@ -248,6 +287,12 @@ public class test_java {
 
 		try {
 			test_thumbnail(host);
+		} catch (RuntimeException e) {
+			System.out.format("Exception: %s%n", e.getMessage());
+		}
+
+		try {
+			test_perf(host);
 		} catch (RuntimeException e) {
 			System.out.format("Exception: %s%n", e.getMessage());
 		}

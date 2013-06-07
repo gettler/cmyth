@@ -20,6 +20,7 @@
 
 import sys
 import hashlib
+import time
 import cmyth
 
 def test_host(host):
@@ -101,6 +102,27 @@ def test_thumbnail(host):
     print 'Thumbnail image size: %d' % size
     print 'MD5: %s' % m.hexdigest()
 
+def test_perf(host):
+    conn = cmyth.connection(host)
+    list = conn.get_proglist()
+    prog = list.get_prog(0)
+    file = prog.open()
+    file.seek(0)
+    offset = 0
+    start = time.time()
+    while offset < 67108864:
+        rc,buf = file.read()
+        if rc < 0 or len(buf) == 0:
+            print 'Error: file read failed!'
+            break
+        offset += len(buf)
+    end = time.time()
+    duration = end - start
+    mbps = (offset * 8) / duration / 1000000.0
+    print 'Perf: read %d bytes in %5.2f seconds (%5.2f mb/s)' % (offset,
+                                                                 duration,
+                                                                 mbps)
+
 if len(sys.argv) > 1:
     host = sys.argv[1]
 else:
@@ -123,6 +145,11 @@ except cmyth.exception as e:
 
 try:
     test_thumbnail(host)
+except cmyth.exception as e:
+    print 'Exception: %s' % e.what()
+
+try:
+    test_perf(host)
 except cmyth.exception as e:
     print 'Exception: %s' % e.what()
 

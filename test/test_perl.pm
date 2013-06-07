@@ -20,6 +20,7 @@
 
 use cmyth;
 use Digest::MD5 qw(md5 md5_hex md5_base64);
+use Time::HiRes qw(gettimeofday tv_interval);
 
 sub test_host {
     my $host = $_[0];
@@ -166,6 +167,38 @@ sub test_thumbnail {
     $conn->release();
 }
 
+sub test_perf {
+    my $host = $_[0];
+    my $conn = new cmyth::connection($host);
+    my $list = $conn->get_proglist();
+    my $prog = $list->get_prog(0);
+    my $file = $prog->open();
+    my $offset = 0;
+
+    $file->seek(0);
+
+    my $start = [gettimeofday];
+
+    while ($offset < 67108864) {
+	my $data = $file->read();
+	if (length($data) <= 0) {
+	    last;
+	}
+	$offset = $offset + length($data)
+    }
+
+    my $duration = tv_interval($start);
+    my $mbps = ($offset * 8) / $duration / 1000000.0;
+
+    printf "Perf: read %d bytes in %.2f seconds (%.2f mb/s)\n",
+        $offset, $duration, $mbps;
+
+    $file->release();
+    $prog->release();
+    $list->release();
+    $conn->release();
+}
+
 if ($#ARGV >= 0) {
     $host = $ARGV[0];
 } else {
@@ -198,6 +231,14 @@ if ($@) {
 
 eval {
     test_thumbnail($host);
+};
+if ($@) {
+    $e = $@->what();
+    print "Exception: $e\n";
+};
+
+eval {
+    test_perf($host);
 };
 if ($@) {
     $e = $@->what();

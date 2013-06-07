@@ -15,44 +15,36 @@
    (hash :initarg :hash :accessor hash))
   (:documentation "cmyth program info class"))
 
-(defgeneric release (proginfo))
-(defgeneric copy (proginfo))
-(defgeneric equals (proginfo proginfo2))
-(defgeneric attr (proginfo &rest items))
-(defgeneric attr* (proginfo &rest items))
-(defgeneric port (proginfo))
-(defgeneric seconds (proginfo))
-(defgeneric bytes (proginfo))
-(defgeneric start (proginfo))
-(defgeneric end (proginfo))
-(defgeneric start-string (proginfo))
-(defgeneric end-string (proginfo))
-(defgeneric channel-id (proginfo))
-(defgeneric open-file (proginfo &optional thumbnail))
-
 (defun add-hash (p name
 		 &optional (fname (find-symbol (string-upcase name) 'cmyth)))
   (setf (gethash name (hash p)) (funcall fname p)))
 
 (defmethod release ((p proginfo))
-  (ref_release (pinfo p))
-  (if (cbl p)
-      (ref_release (cbl p))))
+  (cancel-finalization p)
+  (let ((pinfo (pinfo p))
+	(cbl (cbl p)))
+    (setf (pinfo p) nil)
+    (setf (cbl p) nil)
+    (setf (hash p) nil)
+    (when pinfo
+      (ref_release pinfo))
+    (when cbl
+      (ref_release pinfo))))
 
 (defmethod equals ((p1 proginfo) (p2 proginfo))
   (if (= (cmyth_proginfo_compare (pinfo p1) (pinfo p2)) 0)
       t
       nil))
 
-(defmethod attr* ((p proginfo) &rest items)
+(defun attr* (p &rest items)
   (loop for i in items collect
        (let ((str (gethash i (hash p))))
 	 (if (null str)
 	     (add-hash p i)
 	     str))))
 
-(defmethod attr ((p proginfo) &rest items)
-  (let ((result (apply #'attr* p items)))
+(defun attr (&rest items)
+  (let ((result (apply #'attr* *program* items)))
     (if (= 1 (length result))
 	(values-list result)
 	result)))
@@ -65,8 +57,8 @@
 
 (defmacro attr-string (name function)
   `(defgeneric ,name (proginfo))
-  `(defmethod ,name ((p proginfo))
-     (get-string ,function p)))
+  `(defmethod ,name ((pa proginfo))
+     (get-string ,function pa)))
 
 (defmethod port ((p proginfo))
   (cmyth_proginfo_port (pinfo p)))
@@ -121,28 +113,6 @@
 	 (hash (make-hash-table :test 'equal)))
     (if (pointer-eq pinfo (null-pointer))
 	nil
-	(make-instance 'proginfo :pinfo pinfo :cbl nil :hash hash))))
-
-(defmethod copy ((p proginfo))
-  (let ((progs (ref_hold (pinfo p)))
-	(breaks (ref_hold (cbl p))))
-    (make-instance 'proginfo :pinfo progs :cbl breaks :hash (hash p))))
-
-(defmacro with-progs-reference ((copy progs &key (type nil)) &body body)
-  (let ((local (gensym)))
-    `(let (,copy ,local)
-       (unwind-protect
-	    (progn
-	      (bt:with-lock-held (*cmyth-lock*)
-		(setq ,local ,progs)
-		(for-all (p ,local)
-		     (ref_hold (pinfo p))
-		     (let ((c (cbl p)))
-		       (when c
-			 (ref_hold c))))
-		(setf ,copy ,local))
-	      ,@body)
-	 (unless (null ,local)
-	   (bt:with-lock-held (*cmyth-lock*)
-	     (for-all (p ,local)
-		  (release p))))))))
+	(let ((p (make-instance 'proginfo :pinfo pinfo :cbl nil :hash hash)))
+	  (finalize p (lambda () (ref_release pinfo)))
+	  p))))

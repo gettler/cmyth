@@ -140,6 +140,41 @@ function test_thumbnail($host) {
 	$list->release();
 }
 
+function test_perf($host) {
+	$conn = new connection($host);
+	$list = $conn->get_proglist();
+	$prog = $list->get_prog(0);
+	$file = $prog->open();
+	$file->seek(0);
+	$buf = array();
+	$offset = 0;
+
+	$start = microtime(true);
+
+	while ($offset < 67108864) {
+		$len = $file->read($buf);
+		if ($len <= 0) {
+			break;
+		}
+		$offset += $len;
+	}
+
+	$end = microtime(true);
+
+	$duration = $end - $start;
+	$mbps = ($offset * 8) / $duration / 1000000;
+
+	echo "Perf: read " . $offset;
+	echo " bytes in " . number_format($duration, 2) . " seconds";
+	echo " (" . number_format($mbps, 2) . " mb/s)";
+	echo "\n";
+
+	$file->release();
+	$prog->release();
+	$conn->release();
+	$list->release();
+}
+
 if ($argc > 1) {
 	$host = $argv[1];
 } else {
@@ -168,6 +203,12 @@ try {
 
 try {
 	test_thumbnail($host);
+} catch (Exception $e) {
+	echo "Exception: " . $e->getMessage() . "\n";
+}
+
+try {
+	test_perf($host);
 } catch (Exception $e) {
 	echo "Exception: " . $e->getMessage() . "\n";
 }

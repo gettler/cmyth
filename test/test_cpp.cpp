@@ -251,6 +251,50 @@ void test_thumbnail(const char *host)
 	delete(conn);
 }
 
+void test_perf(const char *host)
+{
+	connection *conn;
+	proglist *list;
+	proginfo *prog;
+	file *file;
+	char *buf;
+	int rc, len;
+	int offset = 0;
+	struct timeval start, end, delta;
+	float duration;
+
+	conn = new connection(host);
+	list = conn->get_proglist();
+	prog = list->get_prog(0);
+	file = prog->open();
+	file->seek(0);
+
+	gettimeofday(&start, NULL);
+
+	while (offset < 67108864) {
+		rc = file->read(&buf, &len);
+		if (rc < 0) {
+			break;
+		}
+		offset += len;
+		free(buf);
+	}
+
+	gettimeofday(&end, NULL);
+
+	timersub(&end, &start, &delta);
+
+	duration = (float)delta.tv_sec + (delta.tv_usec / 1000000.0),
+
+	printf("Perf: read %d bytes in %5.2f seconds (%5.2f mb/s)\n",
+	       offset, duration, (offset * 8) / duration / 1000000.0);
+
+	delete(file);
+	delete(prog);
+	delete(list);
+	delete(conn);
+}
+
 int main(int argc, char **argv)
 {
 	refmem ref;
@@ -282,6 +326,12 @@ int main(int argc, char **argv)
 
 	try {
 		test_thumbnail(host);
+	} catch (exception& e) {
+		printf("Exception: %s\n", e.what());
+	}
+
+	try {
+		test_perf(host);
 	} catch (exception& e) {
 		printf("Exception: %s\n", e.what());
 	}
