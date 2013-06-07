@@ -47,7 +47,7 @@ mythlive = env.Program('mythlive', 'mythlive.c',
 
 targets += [ mythping, mythcat, mythlive ]
 
-if env['CMD_PYSIDEUIC'] != '':
+if env['CMD_PYSIDEUIC']:
     pylive = env.PySideUI('pylive.py', 'pylive.ui')
     targets += [ pylive ]
 

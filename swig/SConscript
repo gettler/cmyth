@@ -106,12 +106,27 @@ def CheckPerl(context):
         context.Result(ret)
     return ret
 
+def CheckPython(context):
+    context.Message('Checking for Python headers ...')
+    cmd = context.env['CMD_PYTHON']
+    ret = None
+    if cmd:
+        ret = sysconfig.get_python_inc()
+        if not os.path.isfile(ret + '/Python.h'):
+            ret = None
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
 env['CMD_JAVAC'] = None
 env['JAVA_HOME'] = None
 env['CMD_PHP'] = None
 env['CMD_PHPCONFIG'] = None
 env['PHP_INCLUDE'] = None
 env['CMD_PYTHON'] = None
+env['CMD_PYTHONINC'] = None
 env['CMD_RUBY'] = None
 env['CMD_GEM'] = None
 env['CMD_RUBYARCH'] = None
@@ -124,29 +139,36 @@ conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckRuby' : CheckRuby,
                                        'CheckLisp' : CheckLisp,
                                        'CheckPerl' : CheckPerl,
+                                       'CheckPython' : CheckPython,
                                        'CheckPHP': CheckPHP })
 env['CMD_SWIG'] = conf.CheckBinary('swig')
 if env['CMD_SWIG']:
     if env['PLATFORM'] != 'ios':
         env['CMD_JAVAC'] = conf.CheckBinary('javac')
-        env['JAVA_HOME'] = conf.CheckJava()
+        if env['CMD_JAVAC']:
+            env['JAVA_HOME'] = conf.CheckJava()
     if not env['PLATFORM'] in [ 'android', 'ios' ]:
         env['CMD_PHP'] = conf.CheckBinary('php')
-        env['CMD_PHPCONFIG'] = conf.CheckBinary('php-config')
-        env['PHP_INCLUDE'] = conf.CheckPHP()
+        if env['CMD_PHP']:
+            env['CMD_PHPCONFIG'] = conf.CheckBinary('php-config')
+            env['PHP_INCLUDE'] = conf.CheckPHP()
         env['CMD_PYTHON'] = conf.CheckBinary('python')
+        if env['CMD_PYTHON']:
+            env['CMD_PYTHONINC'] = conf.CheckPython()
         env['CMD_RUBY'] = conf.CheckBinary('ruby')
-        env['CMD_GEM'] = conf.CheckBinary('gem')
-        env['CMD_RUBYARCH'] = conf.CheckRuby()
+        if env['CMD_RUBY']:
+            env['CMD_GEM'] = conf.CheckBinary('gem')
+            env['CMD_RUBYARCH'] = conf.CheckRuby()
         env['CMD_LISP'] = conf.CheckLisp()
         env['CMD_PERL'] = conf.CheckBinary('perl')
-        env['CMD_PERLARCH'] = conf.CheckPerl()
+        if env['CMD_PERL']:
+            env['CMD_PERLARCH'] = conf.CheckPerl()
 env = conf.Finish()
 
 #
 # Python
 #
-if env['CMD_PYTHON'] != None:
+if env['CMD_PYTHON'] and env['CMD_PYTHONINC']:
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     if sys.platform == 'darwin':
         libs += [ 'python' ]
@@ -161,7 +183,7 @@ if env['CMD_PYTHON'] != None:
                                CCFLAGS = '',
                                CXXFLAGS = '',
                                CPPPATH = [ '../include', '.',
-                                           sysconfig.get_python_inc() ],
+                                           env['CMD_PYTHONINC'] ],
                                LIBPATH = [ '../libcppmyth',
                                            '../libcmyth',
                                            '../librefmem' ])

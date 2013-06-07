@@ -24,8 +24,8 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
 
 if not env.GetOption('clean'):
     conf = Configure(env)
-    if conf.CheckLib('ssl', 'MD5_Init'):
-        cpplibs += [ 'ssl' ]
+    if conf.CheckLib('crypto', 'MD5_Init'):
+        cpplibs += [ 'crypto' ]
         ccflags = ccflags + ' -DWITH_SSL'
     env = conf.Finish()
 
