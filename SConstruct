@@ -45,8 +45,6 @@ def run_command(self, cmd):
                                stderr=subprocess.PIPE)
     stdout_value, stderr_value = command.communicate()
     rc = command.wait()
-    if rc != 0:
-        print 'Error: ' + stderr_value
     return rc,stdout_value,stderr_value
 
 def cmd_not_found(self, arg):
@@ -186,6 +184,7 @@ vars.Add('CXX', '', 'g++')
 vars.Add('LD', '', 'ld')
 vars.Add('CROSS', '', '')
 vars.Add('CFLAGS', '', cflags)
+vars.Add('DEBUGFLAGS', '', '')
 vars.Add('CXXFLAGS', '', cflags)
 vars.Add('LDFLAGS', '', '')
 vars.Add('PLATFORM', '', sys.platform)
@@ -259,6 +258,7 @@ def relpath(p1, p2):
 
 if 'DEBUG' in os.environ:
     env.Replace(CFLAGS = cflags + ' -g -DDEBUG')
+    env.Replace(DEBUGFLAGS = '-g')
 
 if 'NO_MYSQL' in os.environ:
     env.Replace(HAS_MYSQL = 'no')

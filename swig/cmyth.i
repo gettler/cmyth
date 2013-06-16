@@ -23,6 +23,11 @@
 
 %module cmyth
 
+#if defined(SWIGLUA)
+%rename(start_t) start;
+%rename(end_t) end;
+#endif
+
 %{
 #if defined(SWIGCFFI)
 #include <refmem/refmem.h>
@@ -36,7 +41,7 @@
 %typemap(cout) char* ":pointer";
 #endif
 
-#if !defined(SWIGPHP) && !defined(SWIGJAVA) && !defined(SWIGCFFI)
+#if !defined(SWIGPHP) && !defined(SWIGJAVA) && !defined(SWIGCFFI) && !defined(SWIGLUA)
 %include "cstring.i"
 
 %cstring_output_allocate_size(char **file_data, int *bytes_read, free(*$1));
@@ -88,8 +93,6 @@
 
 %typemap(argout) (char **file_data, int *bytes_read) {
 	// file::read() output
-	int *br = (int*)$2;
-	char *buf;
 	if (result == 0) {
 		result = *$2;
 		ZVAL_LONG(return_value,result);
@@ -99,6 +102,71 @@
 	free($2);
 }
 #endif /* SWIGPHP */
+
+#if defined(SWIGLUA)
+%native(with_object) int with_object(lua_State*L);
+%{
+
+//
+// with_object()
+//
+// Use with_object() in Lua to pass a SWIG wrapped object to a c function:
+//
+//     cmyth.with_object(<function>, <object>, <arg1>, <arg2>, ...)
+//
+// <function> will be called with <object> being a pointer to a libcppmyth
+// object, while the optional arguments will be unmodified.  A pointer to
+// <object> can be retrieved with lua_touserdata().
+//
+static int with_object(lua_State*L)
+{
+	void *object = NULL;
+	lua_CFunction func;
+	long long result;
+	swig_lua_userdata *usr;
+	int i;
+
+	SWIG_check_num_args(__FUNCTION__, 2, 16);
+
+	func = lua_tocfunction(L, 1);
+
+	if (!func) {
+		SWIG_fail_arg(__FUNCTION__, 1, "function");
+	}
+
+	if(!SWIG_isptrtype(L,2)) {
+		SWIG_fail_arg(__FUNCTION__, 2, "object");
+	}
+
+	usr = (swig_lua_userdata*)lua_touserdata(L, 2);
+
+	if (!usr) {
+		SWIG_fail_arg(__FUNCTION__, 2, "object");
+	}
+
+	if (!SWIG_IsOK(SWIG_ConvertPtr(L, 2, (void**)&object, usr->type, 0))) {
+		SWIG_fail_ptr(__FUNCTION__, 2, usr->type);
+	}
+
+	lua_remove(L, 1);
+	lua_pushlightuserdata(L, object);
+	lua_replace(L, 1);
+
+	return func(L);
+
+fail:
+	lua_error(L);
+	return 0;
+}
+%}
+
+%typemap(in) (char **file_data, int *bytes_read) {
+}
+
+%typemap(argout) (char **file_data, int *bytes_read) {
+	lua_pushnumber(L, 0);
+}
+#endif /* SWIGLUA */
 
 typedef unsigned int time_t;
 

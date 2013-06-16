@@ -9,8 +9,15 @@ Import('env')
 targets = []
 
 cpplibs = [ 'cppmyth', 'cmyth', 'pthread', 'refmem' ]
-libpath = [ '../libcmyth', '../libcppmyth', '../librefmem' ]
+libpath = [ '../libcmyth', '../libcppmyth', '../librefmem', '../swig' ]
 ccflags = env['CFLAGS']
+
+if not env.GetOption('clean'):
+    conf = Configure(env)
+    if conf.CheckLib('crypto', 'MD5_Init'):
+        cpplibs += [ 'crypto' ]
+        ccflags = ccflags + ' -DWITH_SSL'
+    env = conf.Finish()
 
 if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
     java_test = env.Java('test_java.class', 'test_java.java',
@@ -22,12 +29,16 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
         except:
             pass
 
-if not env.GetOption('clean'):
-    conf = Configure(env)
-    if conf.CheckLib('crypto', 'MD5_Init'):
-        cpplibs += [ 'crypto' ]
-        ccflags = ccflags + ' -DWITH_SSL'
-    env = conf.Finish()
+if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
+    lua_cflags = ccflags + ' ' + env['CMD_LUA_CFLAGS']
+    lua_lib = '-l%s' % env['CMD_LUA']
+    lua_test = env.Program('test_lua', 'test_lua.cpp',
+                           CPPPATH = [ '../include' ],
+                           CCFLAGS = lua_cflags + ' ' + ccflags,
+                           LIBS = cpplibs + [ 'cmyth_lua', lua_lib ],
+                           LIBPATH = libpath,
+                           LINKFLAGS = env['CMD_LUA_LDFLAGS'])
+    targets += lua_test
 
 cpp_test = env.Program('test_cpp', 'test_cpp.cpp',
                        CPPPATH = [ '../include' ],

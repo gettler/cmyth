@@ -92,6 +92,23 @@ def CheckLisp(context):
         context.Result(ret)
     return ret
 
+def CheckLua(context):
+    context.Message('Checking for Lua ...')
+    ret = None
+    for l in [ 'lua', 'lua5.1', 'lua5.2' ]:
+        rc,cflags,err = env.run_command('pkg-config --cflags %s' % l)
+        if rc == 0:
+            rc,libs,err = env.run_command('pkg-config --libs %s' % l)
+            context.env['CMD_LUA_CFLAGS'] = cflags.strip('\r\n')
+            context.env['CMD_LUA_LDFLAGS'] = libs.strip('\r\n')
+            ret = l
+            break
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
 def CheckPerl(context):
     context.Message('Checking for Perl headers ...')
     cmd = context.env['CMD_PERL']
@@ -133,11 +150,13 @@ env['CMD_RUBYARCH'] = None
 env['CMD_LISP'] = None
 env['CMD_PERL'] = None
 env['CMD_PERLARCH'] = None
+env['CMD_LUA'] = None
 
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
                                        'CheckRuby' : CheckRuby,
                                        'CheckLisp' : CheckLisp,
+                                       'CheckLua' : CheckLua,
                                        'CheckPerl' : CheckPerl,
                                        'CheckPython' : CheckPython,
                                        'CheckPHP': CheckPHP })
@@ -160,6 +179,7 @@ if env['CMD_SWIG']:
             env['CMD_GEM'] = conf.CheckBinary('gem')
             env['CMD_RUBYARCH'] = conf.CheckRuby()
         env['CMD_LISP'] = conf.CheckLisp()
+        env['CMD_LUA'] = conf.CheckLua()
         env['CMD_PERL'] = conf.CheckBinary('perl')
         if env['CMD_PERL']:
             env['CMD_PERLARCH'] = conf.CheckPerl()
@@ -181,7 +201,7 @@ if env['CMD_PYTHON'] and env['CMD_PYTHONINC']:
                                SHLIBSUFFIX = '.so',
                                LIBS = libs,
                                CCFLAGS = '',
-                               CXXFLAGS = '',
+                               CXXFLAGS = env['DEBUGFLAGS'],
                                CPPPATH = [ '../include', '.',
                                            env['CMD_PYTHONINC'] ],
                                LIBPATH = [ '../libcppmyth',
@@ -230,7 +250,7 @@ if env['CMD_PHP'] != None and env['CMD_PHPCONFIG'] != None and env['PHP_INCLUDE'
                                SHLIBSUFFIX = '.so',
                                LIBS = [ 'cppmyth', 'cmyth', 'refmem' ],
                                CCFLAGS = '',
-                               CXXFLAGS = '',
+                               CXXFLAGS = env['DEBUGFLAGS'],
                                LINKFLAGS = linkflags,
                                CPPPATH = [ '../include', '.',
                                            phpinc,
@@ -268,7 +288,7 @@ if env['CMD_RUBY'] != None and env['CMD_RUBYARCH'] != None:
                                [ 'cmyth_ruby.cpp' ],
                                SHLIBSUFFIX = '.so',
                                CCFLAGS = '',
-                               CXXFLAGS = '',
+                               CXXFLAGS = env['DEBUGFLAGS'],
                                LIBS = libs,
                                CPPPATH = [ '../include', '.',
                                            rubyarch ],
@@ -367,7 +387,7 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
                                        [ 'cmyth_java.cpp' ],
                                        SHLIBSUFFIX = suffix,
                                        CCFLAGS = '',
-                                       CXXFLAGS = '',
+                                       CXXFLAGS = env['DEBUGFLAGS'],
                                        LINKFLAGS = linkflags,
                                        LIBS = libs,
                                        LIBPATH = libpath,
@@ -442,7 +462,7 @@ if env['CMD_PERL'] != None and env['CMD_PERLARCH'] != None:
                                SHLIBSUFFIX = '.so',
                                LIBS = libs,
                                CCFLAGS = '',
-                               CXXFLAGS = '',
+                               CXXFLAGS = env['DEBUGFLAGS'],
                                LINKFLAGS = linkflags,
                                CPPPATH = [ '../include', '.',
                                            '%s/CORE' % perlarch ],
@@ -454,5 +474,29 @@ if env['CMD_PERL'] != None and env['CMD_PERLARCH'] != None:
     targets += link
     link = env.Symlink('perl/cmyth.pm', 'cmyth.pm')
     targets += link
+
+#
+# Lua
+#
+if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
+    lua = env.Command([ 'cmyth_lua.cpp' ],
+                      interface,
+                      [ cmd % ('lua', 'cmyth_lua.cpp') ])
+    targets += lua
+    libs = [ 'cppmyth', 'cmyth', 'refmem' ]
+    cflags = env['CMD_LUA_CFLAGS'] + ' ' + env['DEBUGFLAGS']
+    linkflags = env['CMD_LUA_LDFLAGS']
+    shared = env.SharedLibrary('cmyth_lua',
+                               [ 'cmyth_lua.cpp' ],
+                               SHLIBSUFFIX = '.so',
+                               LIBS = libs,
+                               CCFLAGS = '',
+                               CXXFLAGS = cflags,
+                               LINKFLAGS = linkflags,
+                               CPPPATH = [ '../include', '.' ],
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
+    targets += shared
 
 Return('targets')

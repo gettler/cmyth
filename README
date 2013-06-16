@@ -61,11 +61,12 @@ Supported build environments include:
 
 Bindings for languages other than C/C++/Objective-C:
 
+	 - Common Lisp
 	 - Java
+	 - Lua
 	 - Perl
 	 - PHP
 	 - Python
 	 - Ruby
-	 - Common Lisp
 
 Please see the test directory for examples of using each language binding.
