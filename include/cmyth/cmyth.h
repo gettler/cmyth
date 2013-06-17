@@ -52,6 +52,7 @@
 
 #include <time.h>
 #include <sys/time.h>
+#include <cmyth/android.h>
 
 #if defined(__GNUC__)
 #define CMYTH_DEPRECATED __attribute__ ((__deprecated__))
