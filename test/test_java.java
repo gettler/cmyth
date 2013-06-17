@@ -259,8 +259,6 @@ public class test_java {
 	public static void main(String[] args) {
 		String host;
 
-		System.loadLibrary("cmyth_java");
-
 		if (args.length > 0) {
 			host = args[0];
 		} else {

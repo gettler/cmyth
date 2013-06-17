@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2012, Jon Gettler
+ *  Copyright (C) 2012-2013, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -48,6 +48,27 @@
 #endif
 
 #if defined(SWIGJAVA)
+%pragma(java) jniclasscode=%{
+static {
+	try {
+		try {
+			System.loadLibrary("cmyth_java");
+		} catch (UnsatisfiedLinkError e) {
+			String path;
+			path = System.getenv("CMYTH_SWIGLIB");
+			if (path == null) {
+				throw new UnsatisfiedLinkError();
+			}
+			System.load(path);
+		}
+	} catch (UnsatisfiedLinkError e) {
+		System.out.println("Failed to load the SWIG cmyth library.");
+		e.printStackTrace();
+		System.exit(1);
+	}
+}
+%}
+
 %typemap(jni) int *bytes_read "jobject"
 %typemap(jtype) int *bytes_read "int"
 %typemap(jstype) int *bytes_read "int"

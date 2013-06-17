@@ -396,11 +396,11 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
                                                    javapath + '/Headers', ])
             targets += shared
         output = env.Command(path + '/cmyth.class',
-                             java,
+                             [ java, interface],
                              [ 'cd swig && %s -d %s -sourcepath %s %s' %
                                (env['CMD_JAVAC'], '.', path, src) ])
                                   
-        jar = env.Command('cmyth.jar', output,
+        jar = env.Command('cmyth.jar', [ output, interface ],
                           [ 'cd swig && jar cf cmyth.jar %s' % classes ])
         targets += jar
 

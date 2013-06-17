@@ -61,6 +61,7 @@ Supported build environments include:
 
 Bindings for languages other than C/C++/Objective-C:
 
+	 - Clojure
 	 - Common Lisp
 	 - Java
 	 - Lua
