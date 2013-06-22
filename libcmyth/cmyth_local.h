@@ -248,6 +248,7 @@ struct cmyth_proginfo {
 	char *proginfo_description;
 	unsigned short proginfo_season;    /* new in V67 */
 	unsigned short proginfo_episode;    /* new in V67 */
+	char *proginfo_syndicatedepisode;    /* new in V76 */
 	char *proginfo_category;
 	long proginfo_chanId;
 	char *proginfo_chanstr;
@@ -271,7 +272,7 @@ struct cmyth_proginfo {
 	unsigned long proginfo_record_id;  /* ??? in V8 */
 	unsigned long proginfo_rec_type;   /* ??? in V8 */
 	unsigned long proginfo_rec_dups;   /* ??? in V8 */
-	unsigned long proginfo_unknown_1;  /* new in V8 */
+	unsigned long proginfo_rec_dupmethod;  /* new in V8 */
 	cmyth_timestamp_t proginfo_rec_start_ts;
 	cmyth_timestamp_t proginfo_rec_end_ts;
 	unsigned long proginfo_repeat;   /* ??? in V8 */
@@ -299,6 +300,8 @@ struct cmyth_proginfo {
 	unsigned long proginfo_videoproperties; /* new in v35 */
 	unsigned long proginfo_subtitletype; /* new in v35 */
 	unsigned short proginfo_year; /* new in v43 */
+	unsigned long proginfo_partnumber; /* new in v76 */
+	unsigned long proginfo_parttotal; /* new in v76 */
 };
 
 struct cmyth_proglist {
