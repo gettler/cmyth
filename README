@@ -69,5 +69,6 @@ Bindings for languages other than C/C++/Objective-C:
 	 - PHP
 	 - Python
 	 - Ruby
+	 - Scala
 
 Please see the test directory for examples of using each language binding.

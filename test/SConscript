@@ -40,6 +40,12 @@ if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
                            LINKFLAGS = env['CMD_LUA_LDFLAGS'])
     targets += lua_test
 
+if env['CMD_SCALA']:
+    scala_test = env.Command([ 'TestScala.class', 'TestScala$.class' ],
+                             'test_scala.scala',
+                             'scalac -d test -classpath swig test/test_scala.scala')
+    targets += scala_test
+
 cpp_test = env.Program('test_cpp', 'test_cpp.cpp',
                        CPPPATH = [ '../include' ],
                        CCFLAGS = ccflags,

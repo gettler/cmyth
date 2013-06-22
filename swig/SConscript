@@ -151,6 +151,7 @@ env['CMD_LISP'] = None
 env['CMD_PERL'] = None
 env['CMD_PERLARCH'] = None
 env['CMD_LUA'] = None
+env['CMD_SCALA'] = None
 
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
@@ -183,6 +184,7 @@ if env['CMD_SWIG']:
         env['CMD_PERL'] = conf.CheckBinary('perl')
         if env['CMD_PERL']:
             env['CMD_PERLARCH'] = conf.CheckPerl()
+        env['CMD_SCALA'] = conf.CheckBinary('scalac')
 env = conf.Finish()
 
 #
