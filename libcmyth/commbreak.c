@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2005-2013, Jon Gettler
+ *  Copyright (C) 2005-2014, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -98,18 +98,14 @@ cmyth_get_commbreaklist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 	unsigned int len = CMYTH_UTC_LEN + CMYTH_LONGLONG_LEN + 19;
 	int err;
 	int count;
-	char *buf;
+	char buf[len];
 	int r;
 
 	cmyth_commbreaklist_t breaklist = cmyth_commbreaklist_create();
 
-	buf = alloca(len);
-	if (!buf) {
-		return breaklist;
-	}
-
-	sprintf(buf,"%s %ld %i", "QUERY_COMMBREAK", prog->proginfo_chanId, 
-	        (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
+	snprintf(buf, sizeof(buf), "%s %ld %i",
+		 "QUERY_COMMBREAK", prog->proginfo_chanId, 
+		 (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
 	pthread_mutex_lock(&conn->conn_mutex);
 	if ((err = cmyth_send_message(conn, buf)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
@@ -144,20 +140,16 @@ cmyth_get_cutlist(cmyth_conn_t conn, cmyth_proginfo_t prog)
 	unsigned int len = CMYTH_UTC_LEN + CMYTH_LONGLONG_LEN + 17;
 	int err;
 	int count;
-	char *buf;
+	char buf[len];
 	int r;
 
 	cmyth_commbreaklist_t breaklist = cmyth_commbreaklist_create();
 
-	buf = alloca(len);
-	if (!buf) {
-		return breaklist;
-	}
-
 	pthread_mutex_lock(&conn->conn_mutex);
 
-	sprintf(buf,"%s %ld %i", "QUERY_CUTLIST", prog->proginfo_chanId, 
-	        (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
+	snprintf(buf, sizeof(buf), "%s %ld %i",
+		 "QUERY_CUTLIST", prog->proginfo_chanId, 
+		 (int)cmyth_timestamp_to_unixtime(prog->proginfo_rec_start_ts));
 
 	if ((err = cmyth_send_message(conn, buf)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
@@ -284,18 +276,20 @@ cmyth_commbreaklist_t
 cmyth_mysql_get_commbreaklist(cmyth_database_t db, cmyth_conn_t conn, cmyth_proginfo_t prog)
 {
 	cmyth_commbreaklist_t breaklist = cmyth_commbreaklist_create();
-	char start_ts_dt[CMYTH_TIMESTAMP_LEN + 1];
+	char *start_ts_dt;
 	int r;
 
-	cmyth_timestamp_to_display_string(start_ts_dt, prog->proginfo_rec_start_ts, 0);
+	start_ts_dt = cmyth_timestamp_display_string(prog->proginfo_rec_start_ts, 0);
 	pthread_mutex_lock(&conn->conn_mutex);
 	if ((r=cmyth_mysql_get_commbreak_list(db, prog->proginfo_chanId, start_ts_dt, breaklist, conn->conn_version)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
 			"%s: cmyth_mysql_get_commbreak_list() failed (%d)\n",
 			__FUNCTION__, r);
+		ref_release(start_ts_dt);
 		goto out;
 	}
 
+	ref_release(start_ts_dt);
 	fprintf(stderr, "Found %li commercial breaks for current program.\n", breaklist->commbreak_count);
 	if (r != breaklist->commbreak_count) {
 		fprintf(stderr, "commbreak error.  Setting number of commercial breaks to zero\n");

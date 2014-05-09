@@ -177,6 +177,7 @@ env.AddMethod(gen_version, 'GenVersion')
 # Save the build configuration.
 #
 cflags = '-Wall -Wextra -Werror -Wno-unused-parameter'
+ldflags = ''
 
 vars = Variables('cmyth.conf')
 vars.Add('CC', '', 'gcc')
@@ -186,7 +187,7 @@ vars.Add('CROSS', '', '')
 vars.Add('CFLAGS', '', cflags)
 vars.Add('DEBUGFLAGS', '', '')
 vars.Add('CXXFLAGS', '', cflags)
-vars.Add('LDFLAGS', '', '')
+vars.Add('LDFLAGS', '', ldflags)
 vars.Add('PLATFORM', '', sys.platform)
 vars.Add('HAS_MYSQL', '', '')
 vars.Add('CMD_PYSIDEUIC', '', '')
@@ -208,7 +209,7 @@ if 'CXX' in os.environ:
     env.Replace(CC = os.environ['CXX'])
 
 if 'LD' in os.environ:
-    env.Replace(CC = os.environ['LD'])
+    env.Replace(LD = os.environ['LD'])
 
 if 'CFLAGS' in os.environ:
     cflags = os.environ['CFLAGS']
@@ -273,6 +274,8 @@ if env['HAS_MYSQL'] == 'yes':
 
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary })
 env['CMD_PYSIDEUIC'] = conf.CheckBinary('pyside-uic')
+if conf.CheckLib('c', 'arc4random_uniform', autoadd=0):
+    env.Append(CPPFLAGS = '-DHAS_ARC4RANDOM')
 env = conf.Finish()
 
 #

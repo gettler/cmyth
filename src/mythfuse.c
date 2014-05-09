@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2008-2010, Jon Gettler
+ *  Copyright (C) 2008-2014, Jon Gettler
  *  http://www.mvpmc.org/
  *
  * This program is free software; you can redistribute it and/or modify
@@ -37,8 +37,13 @@
 
 #define MAX_CONN	32
 #define MAX_FILES	32
-#define MAX_BSIZE	(256*1024*3)
+#define MAX_BSIZE	(128*1024)
 #define MIN_BSIZE	(1024*2)
+
+struct prog_map {
+	cmyth_proginfo_t prog;
+	unsigned int suffix;
+};
 
 struct myth_conn {
 	char *host;
@@ -47,6 +52,8 @@ struct myth_conn {
 	cmyth_proglist_t list;
 	pthread_t thread;
 	int used;
+	struct prog_map *progs;
+	int nprogs;
 };
 
 struct path_info {
@@ -123,6 +130,55 @@ static char *README_PATH = "/README";
 static time_t readme_time = 0;
 static time_t readme_atime = 0;
 
+static void
+free_info(struct path_info *info)
+{
+	free(info->host);
+	free(info->dir);
+	free(info->file);
+}
+
+static void
+parse_progs(struct myth_conn *c)
+{
+	int i, j, count;
+	struct prog_map *progs;
+
+	count = cmyth_proglist_get_count(c->list);
+
+	progs = ref_alloc(sizeof(*progs)*count);
+
+	for (i=0; i<count; i++) {
+		cmyth_proginfo_t prog;
+		char *title, *subtitle;
+		prog = cmyth_proglist_get_item(c->list, i);
+		title = cmyth_proginfo_title(prog);
+		subtitle = cmyth_proginfo_subtitle(prog);
+		progs[i].prog = ref_hold(prog);
+		progs[i].suffix = 0;
+		for (j=0; j<i; j++) {
+			char *t, *s;
+			t = cmyth_proginfo_title(progs[j].prog);
+			s = cmyth_proginfo_subtitle(progs[j].prog);
+			if ((strcmp(title, t) == 0) &&
+			    (strcmp(subtitle, s) == 0)) {
+				progs[i].suffix++;
+			}
+			ref_release(t);
+			ref_release(s);
+		}
+		ref_release(title);
+		ref_release(subtitle);
+		ref_release(prog);
+	}
+
+	for (i=0; i<c->nprogs; i++) {
+		ref_release(c->progs[i].prog);
+	}
+	ref_release(c->progs);
+	c->progs = progs;
+}
+
 static void*
 event_loop(void *arg)
 {
@@ -167,6 +223,7 @@ event_loop(void *arg)
 			ref_release(list);
 			list = cmyth_proglist_get_all_recorded(control);
 			conn[i].list = list;
+			parse_progs(conn+i);
 			break;
 		default:
 			break;
@@ -237,7 +294,7 @@ lookup_path(const char *path, struct path_info *info)
 	char *tmp = strdup(path);
 	int ret = 0;
 	char *parts[8];
-	int i = 0;
+	int i = 0, j;
 
 	memset(info, 0, sizeof(*info));
 
@@ -268,6 +325,9 @@ lookup_path(const char *path, struct path_info *info)
 	if ((i >= 2) && 
 	    ((strcmp(parts[1], "files") != 0) &&
 	     (strcmp(parts[1], "all") != 0))) {
+		for (j=0; j<=i; j++) {
+			free(parts[j]);
+		}
 		ret = -ENOENT;
 		goto out;
 	}
@@ -275,6 +335,10 @@ lookup_path(const char *path, struct path_info *info)
 	info->host = parts[0];
 	info->dir = parts[1];
 	info->file = parts[2];
+
+	for (j=3; j<i; j++) {
+		free(parts[j]);
+	}
 
 	debug("%s(): host '%s' file '%s'\n", __FUNCTION__,
 	      info->host, info->file);
@@ -319,11 +383,6 @@ do_open(cmyth_proginfo_t prog, struct fuse_file_info *fi, int i)
 	cmyth_conn_t c = NULL;
 	cmyth_file_t f = NULL;
 	char *host;
-
-	if (F) {
-		cmyth_dbg_all();
-		stderr = F;
-	}
 
 	if ((host=cmyth_proginfo_host(prog)) == NULL) {
 		return -1;
@@ -372,6 +431,7 @@ static int o_files(int f, struct path_info *info, struct fuse_file_info *fi)
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
@@ -513,6 +573,7 @@ rd_files(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
@@ -527,7 +588,6 @@ rd_files(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 		cmyth_proginfo_t prog;
 		long long len;
 		char *fn, *pn;
-		struct stat st;
 
 		prog = cmyth_proglist_get_item(list, i);
 		pn = cmyth_proginfo_pathname(prog);
@@ -535,12 +595,8 @@ rd_files(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 
 		fn = pn+1;
 
-		memset(&st, 0, sizeof(st));
-		st.st_mode = S_IFREG | 0444;
-		st.st_size = len;
-
 		debug("%s(): file '%s' len %lld\n", __FUNCTION__, fn, len);
-		filler(buf, fn, &st, 0);
+		filler(buf, fn, NULL, 0);
 
 		ref_release(prog);
 		ref_release(pn);
@@ -560,6 +616,7 @@ rd_all(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 	cmyth_conn_t control;
 	cmyth_proglist_t list;
 	int count;
+	struct myth_conn *mc;
 
 	pthread_mutex_lock(&mutex);
 
@@ -573,9 +630,12 @@ rd_all(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
+
+	mc = conn+i;
 
 	list = ref_hold(list);
 
@@ -583,12 +643,12 @@ rd_all(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 
 	count = cmyth_proglist_get_count(list);
 
+	char *name[count];
+
 	for (i=0; i<count; i++) {
 		cmyth_proginfo_t prog;
 		long long len;
 		char *fn, *pn, *t, *s;
-		struct stat st;
-		char tmp[512];
 
 		prog = cmyth_proglist_get_item(list, i);
 		pn = cmyth_proginfo_pathname(prog);
@@ -596,21 +656,26 @@ rd_all(struct path_info *info, void *buf, fuse_fill_dir_t filler,
 		s = cmyth_proginfo_subtitle(prog);
 		len = cmyth_proginfo_length(prog);
 
-		snprintf(tmp, sizeof(tmp), "%s - %s.nuv", t, s);
+		if (mc->progs[i].suffix == 0) {
+			name[i] = ref_sprintf("%s - %s.nuv", t, s);
+		} else {
+			name[i] = ref_sprintf("%s - %s (%d).nuv", t, s,
+					      mc->progs[i].suffix);
+		}
 
 		fn = pn+1;
 
-		memset(&st, 0, sizeof(st));
-		st.st_mode = S_IFLNK | 0444;
-		st.st_size = strlen(pn) + 8;
-
 		debug("%s(): file '%s' len %lld\n", __FUNCTION__, fn, len);
-		filler(buf, tmp, &st, 0);
+		filler(buf, name[i], NULL, 0);
 
 		ref_release(prog);
 		ref_release(pn);
 		ref_release(t);
 		ref_release(s);
+	}
+
+	for (i=0; i<count; i++) {
+		ref_release(name[i]);
 	}
 
 	ref_release(control);
@@ -631,7 +696,6 @@ static int myth_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	if (lookup_path(path, &info) < 0) {
 		return -ENOENT;
 	}
-
 
 	if (info.host == NULL) {
 		for (i=0; i<MAX_CONN; i++) {
@@ -668,21 +732,7 @@ finish:
 	filler(buf, "..", NULL, 0);
 
 	if (strcmp(path, "/") == 0) {
-		struct stat st;
-		memset(&st, 0, sizeof(st));
-		st.st_mode = S_IFREG | 0444;
-		st.st_size = strlen(README);
-		st.st_nlink = 1;
-
-		if (readme_time == 0) {
-			time(&readme_time);
-			readme_atime = readme_time;
-		}
-		st.st_atime = readme_atime;
-		st.st_mtime = readme_time;
-		st.st_ctime = readme_time;
-
-		filler(buf, "README", &st, 0);
+		filler(buf, "README", NULL, 0);
 	}
 
 	return 0;
@@ -707,6 +757,7 @@ static int ga_files(struct path_info *info, struct stat *stbuf)
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
@@ -737,6 +788,11 @@ static int ga_files(struct path_info *info, struct stat *stbuf)
 			debug("%s(): file '%s' len %lld\n",
 			      __FUNCTION__, pn+1, len);
 			stbuf->st_size = len;
+			stbuf->st_blksize = MAX_BSIZE;
+			stbuf->st_blocks = len / MAX_BSIZE;
+			if ((len * MAX_BSIZE) != stbuf->st_blocks) {
+				stbuf->st_blocks++;
+			}
 			ts = cmyth_proginfo_rec_end(prog);
 			t = cmyth_timestamp_to_unixtime(ts);
 			stbuf->st_atime = t;
@@ -765,6 +821,7 @@ static int ga_all(struct path_info *info, struct stat *stbuf)
 	cmyth_proglist_t list;
 	int count;
 	int i;
+	struct myth_conn *mc;
 
 	pthread_mutex_lock(&mutex);
 
@@ -778,9 +835,12 @@ static int ga_all(struct path_info *info, struct stat *stbuf)
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
+
+	mc = conn+i;
 
 	list = ref_hold(list);
 
@@ -803,7 +863,12 @@ static int ga_all(struct path_info *info, struct stat *stbuf)
 		title = cmyth_proginfo_title(prog);
 		s = cmyth_proginfo_subtitle(prog);
 
-		snprintf(tmp, sizeof(tmp), "%s - %s.nuv", title, s);
+		if (mc->progs[i].suffix > 0) {
+			snprintf(tmp, sizeof(tmp), "%s - %s (%d).nuv",
+				 title, s, mc->progs[i].suffix);
+		} else {
+			snprintf(tmp, sizeof(tmp), "%s - %s.nuv", title, s);
+		}
 
 		if (strcmp(tmp, info->file) == 0) {
 			cmyth_timestamp_t ts;
@@ -872,12 +937,14 @@ static int myth_getattr(const char *path, struct stat *stbuf)
         if (info.host == NULL) {
                 stbuf->st_mode = S_IFDIR | 0555;
                 stbuf->st_nlink = 2;
+		free_info(&info);
 		return 0;
 	}
 
 	if (info.dir == NULL) {
                 stbuf->st_mode = S_IFDIR | 0555;
                 stbuf->st_nlink = 2;
+		free_info(&info);
 		return 0;
 	}
 
@@ -889,12 +956,14 @@ static int myth_getattr(const char *path, struct stat *stbuf)
 		i++;
 	}
 	if (dircb[i].name == NULL) {
+		free_info(&info);
 		return -ENOENT;
 	}
 
 	if (info.file == NULL) {
                 stbuf->st_mode = S_IFDIR | 0555;
                 stbuf->st_nlink = 2;
+		free_info(&info);
 		return 0;
 	}
 
@@ -905,6 +974,8 @@ static int myth_getattr(const char *path, struct stat *stbuf)
 		}
 		i++;
 	}
+
+	free_info(&info);
 
 	return -ENOENT;
 }
@@ -974,14 +1045,18 @@ static int myth_read(const char *path, char *buf, size_t size, off_t offset,
 {
 	int tot, len = 0;
 
+	pthread_mutex_lock(&mutex);
+
 	debug("%s(): path '%s' size %lld\n", __FUNCTION__, path,
 	      (long long)size);
 
 	if (strcmp(path, README_PATH) == 0) {
+		pthread_mutex_unlock(&mutex);
 		return readme_read(path, buf, size, offset, fi);
 	}
 
 	if ((int)fi->fh == -1) {
+		pthread_mutex_unlock(&mutex);
 		return -ENOENT;
 	}
 
@@ -1009,12 +1084,13 @@ static int myth_read(const char *path, char *buf, size_t size, off_t offset,
 		goto fail;
 	}
 
+	pthread_mutex_unlock(&mutex);
+
 	return tot;
 
 fail:
 	debug("%s(): shutting down file connection!\n", __FUNCTION__);
 
-	pthread_mutex_lock(&mutex);
 	ref_release(files[fi->fh].file);
 	memset(files+fi->fh, 0, sizeof(files[0]));
 	pthread_mutex_unlock(&mutex);
@@ -1030,6 +1106,7 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 	cmyth_conn_t control;
 	cmyth_proglist_t list;
 	int count;
+	struct myth_conn *mc;
 
 	debug("%s(): path '%s' size %lld\n", __FUNCTION__, path,
 	      (long long)size);
@@ -1040,12 +1117,14 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 	}
 
 	if (strcmp(info.dir, "all") != 0) {
+		free_info(&info);
 		return -ENOENT;
 	}
 
 	pthread_mutex_lock(&mutex);
 
 	if ((i=lookup_server(info.host)) < 0) {
+		free_info(&info);
 		pthread_mutex_unlock(&mutex);
 		return -ENOENT;
 	}
@@ -1055,9 +1134,12 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 	if (conn[i].list == NULL) {
 		list = cmyth_proglist_get_all_recorded(control);
 		conn[i].list = list;
+		parse_progs(conn+i);
 	} else {
 		list = conn[i].list;
 	}
+
+	mc = conn+i;
 
 	list = ref_hold(list);
 
@@ -1075,7 +1157,12 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 		s = cmyth_proginfo_subtitle(prog);
 		pn = cmyth_proginfo_pathname(prog);
 
-		snprintf(tmp, sizeof(tmp), "%s - %s.nuv", t, s);
+		if (mc->progs[i].suffix == 0) {
+			snprintf(tmp, sizeof(tmp), "%s - %s.nuv", t, s);
+		} else {
+			snprintf(tmp, sizeof(tmp), "%s - %s (%d).nuv", t, s,
+				 mc->progs[i].suffix);
+		}
 
 		if (strcmp(tmp, info.file) == 0) {
 			snprintf(tmp, sizeof(tmp), "../files%s", pn);
@@ -1093,6 +1180,8 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 			ref_release(control);
 			ref_release(list);
 
+			free_info(&info);
+
 			return 0;
 		}
 
@@ -1104,6 +1193,8 @@ static int myth_readlink(const char *path, char *buf, size_t size)
 
 	ref_release(control);
 	ref_release(list);
+
+	free_info(&info);
 
 	return -ENOENT;
 }

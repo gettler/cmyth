@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2004-2013, Eric Lund, Jon Gettler
+ *  Copyright (C) 2004-2014, Eric Lund, Jon Gettler
  *  http://www.mvpmc.org/
  *
  *  This library is free software; you can redistribute it and/or
@@ -348,34 +348,6 @@ cmyth_recorder_get_keyframe_pos(cmyth_recorder_t rec, unsigned long keynum)
 }
 
 /*
- * cmyth_recorder_get_position_map(cmyth_recorder_t rec,
- *                                 cmyth_posmap_t map,
- *                                 long start,
- *                                 long end)
- * 
- * Scope: PUBLIC
- *
- * Description
- *
- * Request a list of {keynum, position} pairs starting at keynum
- * 'start' and ending with keynum 'end' from the current recording on
- * recorder 'rec'.
- *
- * Return Value:
- *
- * Success: 0
- *
- * Failure: -(ERRNO)
- */
-cmyth_posmap_t
-cmyth_recorder_get_position_map(cmyth_recorder_t rec,
-				unsigned long start,
-				unsigned long end)
-{
-	return NULL;
-}
-
-/*
  * cmyth_recorder_get_recording(cmyth_recorder_t rec)
  * 
  * Scope: PUBLIC
@@ -499,7 +471,8 @@ cmyth_recorder_pause(cmyth_recorder_t rec)
 
 	pthread_mutex_lock(&rec->rec_conn->conn_mutex);
 
-	sprintf(Buffer, "QUERY_RECORDER %ld[]:[]PAUSE", (long) rec->rec_id);
+	snprintf(Buffer, sizeof(Buffer),
+		 "QUERY_RECORDER %ld[]:[]PAUSE", (long) rec->rec_id);
 	if ((ret=cmyth_send_message(rec->rec_conn, Buffer)) < 0) {
 		cmyth_dbg(CMYTH_DBG_ERROR,
 			  "%s: cmyth_send_message('%s') failed\n",
@@ -1548,50 +1521,6 @@ cmyth_recorder_done_ringbuf(cmyth_recorder_t rec)
 	pthread_mutex_unlock(&rec->rec_conn->conn_mutex);
 
 	return ret;
-}
-
-/*
- * cmyth_recorder_start_stream(cmyth_recorder_t rec)
- *
- * Scope: PUBLIC
- *
- * Description:
- *
- * Request the recorder 'rec' to start a stream of the current
- * recording (or live-tv).
- *
- * Return Value:
- *
- * Success: 0
- *
- * Failure: -(ERRNO)
- */
-int
-cmyth_recorder_start_stream(cmyth_recorder_t rec)
-{
-	return -ENOSYS;
-}
-
-/*
- * cmyth_recorder_end_stream(cmyth_recorder_t rec)
- *
- * Scope: PUBLIC
- *
- * Description:
- *
- * Request the recorder 'rec' to end a stream of the current recording
- * (or live-tv).
- *
- * Return Value:
- *
- * Success: 0
- *
- * Failure: -(ERRNO)
- */
-int
-cmyth_recorder_end_stream(cmyth_recorder_t rec)
-{
-	return -ENOSYS;
 }
 
 char*
