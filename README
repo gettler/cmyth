@@ -29,6 +29,9 @@ To cleanup a target:
 
 	$ scons -c <target>
 
+To do a full cleanup:
+	$ scons -c distclean
+
 To specify an install prefix:
 
 	$ PREFIX=<path> scons install
