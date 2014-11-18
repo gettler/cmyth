@@ -394,8 +394,10 @@ all = targets
 if (build_cscope and cs) or do_distclean:
     cscope_files = [ Glob('src/*.[ch]'),
                      Glob('src/*.cc'),
+                     Glob('src/*.cpp'),
                      Glob('lib*/*.[ch]'),
                      Glob('lib*/*.cc'),
+                     Glob('lib*/*.cpp'),
                      Glob('include/*.h'),
                      Glob('include/*/*.h') ]
     f = open('cscope.files', 'w')
@@ -408,6 +410,7 @@ if (build_cscope and cs) or do_distclean:
                            'cscope.in.out', 'cscope.po.out' ],
                          cscope_files,
                          [ '%s -b -q -k' % cs ])
+    env.Clean(cscope, [ 'cscope.files' ])
     env.Alias('cscope', [cscope])
     all += [cscope]
 
@@ -463,6 +466,7 @@ if not env.GetOption('clean'):
 def distclean():
     print 'distclean: cleanup scons data'
     files = [ '.sconsign.dblite', 'config.log', 'cmyth.conf' ]
+    files += [ str(name) for name in Glob('scons/*.pyc') ]
     dirs = [ '.sconf_temp' ]
     for f in files:
         try:

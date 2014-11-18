@@ -41,7 +41,14 @@ if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
     targets += lua_test
 
 if env['CMD_SCALA']:
-    scala_test = env.Command([ 'TestScala.class', 'TestScala$.class' ],
+    scala_test = env.Command([ 'TestScala.class', 'TestScala$.class',
+                               File('TestScala$$anonfun$test_file$1.class'),
+                               File('TestScala$$anonfun$test_file$2.class'),
+                               File('TestScala$$anonfun$test_host$1.class'),
+                               File('TestScala$$anonfun$test_host$2.class'),
+                               File('TestScala$$anonfun$test_host$3.class'),
+                               File('TestScala$$anonfun$test_thumbnail$1.class'),
+                               File('TestScala$$anonfun$test_thumbnail$2.class')],
                              'test_scala.scala',
                              'scalac -d test -classpath swig test/test_scala.scala')
     targets += scala_test
