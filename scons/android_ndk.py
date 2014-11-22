@@ -44,56 +44,82 @@ _ndk_copy_builder = SCons.Builder.Builder(
     prefix = '$NDK_PREFIX',
     src_suffix = [ '$NDK_CCSUFFIX', '$NDK_CPPSUFFIX' ])
 
-def generate_makefile(env, target, source, includes, libs, libdirs):
+def generate_makefile(env, target, source, includes, libs, libdirs, abi):
+    """Generate Android NDK makefiles"""
 
-    path = os.path.dirname(Dir(target[0]).abspath)
-    lib = os.path.basename(Dir(target[0]).abspath)
+    path = os.path.dirname(Dir(target).abspath)
+    libname = os.path.basename(Dir(target).abspath)
     src = [ '../' + str(s) for s in source ]
     incs = [ path + '/' + str(i) for i in includes ]
-    libs = [ '-l' + str(l) for l in libs ]
-    libdirs = [ '-L' + path + '/' + str(l) for l in libdirs ]
+    local_libs = [ str(l) for l in libs ]
+    local_src = [ str(d) + '/libs/$(TARGET_ARCH_ABI)/' + str(l) for d,l in zip(libdirs,libs) ]
+    libdirs = [ '-L' + os.path.join(path, str(l), 'libs', abi) for l in libdirs ]
 
     prefix = os.path.dirname(_detect(env))
 
-    incs += [ prefix + '/sources/cxx-stl/gnu-libstdc++/include',
-              prefix + '/sources/cxx-stl/gnu-libstdc++/libs/armeabi/include',
-              prefix + '/sources/cxx-stl/gnu-libstdc++/4.4.3/include',
-              prefix + '/sources/cxx-stl/gnu-libstdc++/4.4.3/libs/armeabi/include' ]
+    prebuilt = []
 
-    makefile = [ '# Automatically generated',
+    for lib in libs:
+        libdir = 'lib%s' % lib
+        library = 'lib%s.so' % lib
+        prebuilt += [
+            'include $(CLEAR_VARS)',
+            'LOCAL_MODULE := %s' % lib,
+            'LOCAL_SRC_FILES := ../../%s/libs/$(TARGET_ARCH_ABI)/%s' % (libdir,library),
+            'include $(PREBUILT_SHARED_LIBRARY)',
+            '' ]
+
+    android = [ '# Automatically generated',
                  '# Do not edit!',
                  'LOCAL_PATH := $(call my-dir)',
+                 '',
+                 '\n'.join(prebuilt),
+                 '',
                  'include $(CLEAR_VARS)',
-                 'LOCAL_C_INCLUDES := \\',
-                 ' '.join(incs),
-                 'LOCAL_MODULE := ' + lib,
-                 'LOCAL_SRC_FILES := \\',
-                 ' '.join(src),
-                 'LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog \\',
-                 ' '.join(libdirs) + ' \\',
-                 ' '.join(libs),
+                 'LOCAL_C_INCLUDES := %s' % ' '.join(incs),
+                 'LOCAL_MODULE := %s' % libname,
+                 'LOCAL_SRC_FILES := %s'% ' '.join(src),
+                 'LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog',
                  'LOCAL_CPPFLAGS := -fexceptions',
+                 'LOCAL_SHARED_LIBRARIES := %s' % ' '.join(local_libs),
                  'include $(BUILD_SHARED_LIBRARY)' ]
+
+    app = [ '# Automatically generated',
+            '# Do not edit!',
+            'APP_ABI := %s' % abi,
+            'APP_STL := gnustl_static',
+            'APP_CPPFLAGS += -fexceptions -std=c++11',
+            'LOCAL_SRC_FILES := %s' % ' '.join(local_src) ]
 
     try:
         os.makedirs(path + '/jni')
     except:
         pass
     
-    f = open(path + '/jni/Android.mk', 'w')
-    f.write('\n'.join(makefile))
+    android_mk = '%s/jni/Android.mk' % path
+    f = open(android_mk, 'w')
+    f.write('\n'.join(android))
     f.write('\n')
     f.close()
 
-    return 0
+    application_mk = '%s/jni/Application.mk' % path
+    f = open(application_mk, 'w')
+    f.write('\n'.join(app))
+    f.write('\n')
+    f.close()
+
+    return [ File(android_mk), File(application_mk) ]
 
 def AndroidNDK(env, target, source=None, *args, **kw):
     """Android NDK builder"""
 
-    if not SCons.Util.is_List(target):
-        target = [target]
+    if SCons.Util.is_List(target):
+        if len(target) > 1:
+            SCons.Errors.StopError('Android NDK builder only supports a single target!')
+        target = target[0]
+
     if not source:
-        source = target[:]
+        source = target
     if not SCons.Util.is_List(source):
         source = [source]
 
@@ -112,16 +138,18 @@ def AndroidNDK(env, target, source=None, *args, **kw):
     else:
         libdirs = []
 
-    kw['NDK_PROJECT_PATH'] = os.path.dirname(Dir(target[0]).abspath)
+    if 'ABI' in kw:
+        abi = kw['ABI']
+    else:
+        abi = 'armeabi'
 
-    generate_makefile(env, target, source, includes, libs, libdirs)
-
-    lib = kw['NDK_PROJECT_PATH'] + '/libs/armeabi/lib' + target[0] + '.so'
+    kw['NDK_PROJECT_PATH'] = os.path.dirname(Dir(target).abspath)
+    lib = kw['NDK_PROJECT_PATH'] + '/libs/' + abi + '/lib' + target + '.so'
 
     result = []
-    rc = _ndk_builder.__call__(env, lib, source, **kw)
+    rc = generate_makefile(env, target, source, includes, libs, libdirs, abi)
     result.extend(rc)
-    rc = _ndk_copy_builder.__call__(env, target, lib, **kw)
+    rc = _ndk_builder.__call__(env, lib, source, **kw)
     result.extend(rc)
 
     return result
