@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 TOP=`git rev-parse --show-toplevel`
 
-if [ "${TOP}" == "--show-toplevel" ] ; then
+if [ "${TOP}" = "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 

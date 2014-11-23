@@ -76,7 +76,8 @@ void test_host(const char *host)
 
 		printf("  %s - %s\n", title, subtitle);
 		printf("    %s %lld\n", pathname, prog->length());
-		printf("    %ld - %ld\n", prog->start(), prog->end());
+		printf("    %lld - %lld\n",
+		       (long long)prog->start(), (long long)prog->end());
 		start = prog->start_str();
 		end = prog->end_str();
 		printf("    %s - %s\n", start, end);

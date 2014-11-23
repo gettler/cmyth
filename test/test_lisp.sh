@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 TOP=`git rev-parse --show-toplevel`
 
-if [ "${TOP}" == "--show-toplevel" ] ; then
+if [ "${TOP}" = "--show-toplevel" ] ; then
     TOP=`pwd`
 fi
 
@@ -21,13 +21,13 @@ export DYLD_LIBRARY_PATH=${LIBRARY_PATH}
 export LISPDIR=${SWIGDIR}/lisp/
 
 if [ "$LISP_IMPL" != "" ] ; then
-    if [ "$LISP_IMPL" == "sbcl" ] ; then
+    if [ "$LISP_IMPL" = "sbcl" ] ; then
 	SBCL=`which sbcl`
-    elif [ "$LISP_IMPL" == "ccl" ] ; then
+    elif [ "$LISP_IMPL" = "ccl" ] ; then
 	CCL=`which ccl`
-    elif [ "$LISP_IMPL" == "ecl" ] ; then
+    elif [ "$LISP_IMPL" = "ecl" ] ; then
 	ECL=`which ecl`
-    elif [ "$LISP_IMPL" == "clisp" ] ; then
+    elif [ "$LISP_IMPL" = "clisp" ] ; then
 	CLISP=`which clisp`
     fi
 else

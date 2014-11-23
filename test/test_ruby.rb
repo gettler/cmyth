@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 #
 #  Copyright (C) 2012-2013, Jon Gettler
 #  http://www.mvpmc.org/

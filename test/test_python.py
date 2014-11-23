@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 #
 #  Copyright (C) 2012-2013, Jon Gettler
 #  http://www.mvpmc.org/
