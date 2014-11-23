@@ -24,11 +24,11 @@ libver = env.GenVersion('version.h',
 src = [ 'alloc.c', 'debug.c', 'version.c' ]
 
 if platform == 'android':
-    makefile = env.NDK(name, src,
-                       INCLUDES = [ '../include', '.' ])
+    arm = env.NDK(name, src,
+                  INCLUDES = [ '../include', '.' ])
 
-    env.Install(prefix + '/lib', makefile)
-    targets = [ makefile ]
+    env.Install(prefix + '/lib', arm)
+    targets = [ arm ]
 else:
     linkflags = env.soname(name, major, minor, branch, fork)
 

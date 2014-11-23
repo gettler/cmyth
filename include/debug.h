@@ -85,7 +85,8 @@ __cmyth_dbg(cmyth_debug_ctx_t *ctx, int level, char *fmt, va_list ap)
 			ctx->msg_callback(level, msg);
 		} else {
 #if defined ANDROID
-			__android_log_print(ANDROID_LOG_INFO, "cmyth_dbg", msg);
+			__android_log_print(ANDROID_LOG_INFO, "cmyth_dbg",
+					    "%s", msg);
 #else
 			fwrite(msg, strlen(msg), 1, stdout);
 #endif
