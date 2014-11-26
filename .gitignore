@@ -54,6 +54,7 @@ swig/python/build
 swig/python/setup.py
 swig/python/cmyth.py
 swig/perl/cmyth.pm
+test/test_all.sh
 test/test_cpp
 test/test_lua
 xcode/build

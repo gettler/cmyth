@@ -19,10 +19,10 @@ platform = env['PLATFORM']
 targets = []
 
 interface = [ 'cmyth.i', Glob('../include/*.h'), Glob('../include/*/*.h') ]
-cmd = 'swig -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
-cmd_python = 'swig -c++ -threads -%s -Iinclude -o swig/%s swig/cmyth.i'
-cmd_c = 'swig -%s -Iinclude -o swig/%s swig/cmyth.i'
-cmd_java = 'swig -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
+cmd = '%s -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
+cmd_python = '%s -c++ -threads -%s -Iinclude -o swig/%s swig/cmyth.i'
+cmd_c = '%s -%s -Iinclude -o swig/%s swig/cmyth.i'
+cmd_java = '%s -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
 
 def CheckBinary(context, name):
     context.Message('Checking for %s ...' % name)
@@ -53,39 +53,56 @@ def CheckPHP(context):
     ret = None
     if cmd:
         rc,phpinc,err = context.env.run_command('%s --include-dir' % cmd)
-        ret = phpinc[:-1]
+        dir = phpinc[:-1]
+        if os.path.isdir(dir):
+            ret = dir
     if ret == None:
         context.Result('no')
     else:
         context.Result(ret)
     return ret
 
-def CheckRuby(context):
+def CheckRubyHdr(context):
     context.Message('Checking for Ruby headers ...')
     cmd = context.env['CMD_RUBY']
-    ret = None
+    ret = []
     if cmd:
-        rc,rubyarch,err = env.run_command('ruby -rrbconfig -e '
-                                          '\'puts Config::CONFIG["archdir"]\'')
-        ret = rubyarch[:-1]
-        if not os.path.isfile(ret + '/ruby.h'):
-            ret = None
-    if ret == None:
+        def conf_lookup(name, variable):
+            conf = '%s -rrbconfig -e \'puts %s::CONFIG["%s"]\''
+            cmd = conf % (context.env['CMD_RUBY'], name, var)
+            rc,result,err = context.env.run_command(cmd)
+            line = result.split('\n')[0]
+            if rc == 0 and len(line) > 0 and line != 'nil':
+                return line
+            else:
+                return None
+
+        for var in [ 'rubyhdrdir', 'rubyarchhdrdir', 'archdir' ]:
+            for name in [ 'RbConfig', 'Config' ]:
+                try:
+                    result = conf_lookup(name, var)
+                    if result:
+                        ret += [ result ]
+                        break
+                except:
+                    pass
+
+    if len(ret) == 0:
         context.Result('no')
+        return None
     else:
-        context.Result(ret)
+        # SCons 2.3.1 can return a list, but 2.1.0 cannot...
+        context.Result(str(ret))
     return ret
 
 def CheckLisp(context):
     context.Message('Checking for Common Lisp ...')
-    lisp = []
     ret = None
-    for l in [ 'sbcl', 'ccl', 'ecl', 'clisp' ]:
+    for l in [ 'sbcl', 'ccl', 'ecl' ]:
         cmd = SCons.Util.WhereIs(l)
         if cmd:
-            lisp += [ cmd ]
-    if len(lisp) > 0:
-        ret = lisp[0]
+            ret = cmd
+            break
     if ret == None:
         context.Result('no')
     else:
@@ -95,13 +112,37 @@ def CheckLisp(context):
 def CheckLua(context):
     context.Message('Checking for Lua ...')
     ret = None
-    for l in [ 'lua', 'lua5.1', 'lua5.2' ]:
+    for l in [ 'lua', 'lua5.1', 'lua5.2', 'lua-5.2' ]:
+        cmd = SCons.Util.WhereIs(l)
+        if cmd:
+            ret = cmd
+            break
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
+def CheckLuaCflags(context):
+    context.Message('Checking for Lua CFLAGS ...')
+    ret = None
+    for l in [ 'lua', 'lua5.1', 'lua5.2', 'lua-5.2' ]:
         rc,cflags,err = env.run_command('pkg-config --cflags %s' % l)
         if rc == 0:
-            rc,libs,err = env.run_command('pkg-config --libs %s' % l)
-            context.env['CMD_LUA_CFLAGS'] = cflags.strip('\r\n')
-            context.env['CMD_LUA_LDFLAGS'] = libs.strip('\r\n')
-            ret = l
+            ret = cflags.split('\n')[0]
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
+def CheckLuaLDflags(context):
+    context.Message('Checking for Lua LDFLAGS ...')
+    ret = None
+    for l in [ 'lua', 'lua5.1', 'lua5.2', 'lua-5.2' ]:
+        rc,libs,err = env.run_command('pkg-config --libs %s' % l)
+        if rc == 0:
+            ret = libs.split('\n')[0]
             break
     if ret == None:
         context.Result('no')
@@ -111,11 +152,11 @@ def CheckLua(context):
 
 def CheckPerl(context):
     context.Message('Checking for Perl headers ...')
-    cmd = context.env['CMD_PERL']
+    perl = context.env['CMD_PERL']
     ret = None
-    if cmd:
-        rc,perlarch,err = env.run_command('perl -e \'use Config; print '
-                                          '"$Config{archlib}\n";\'')
+    if perl:
+        cmd = '%s -e \'use Config; print "$Config{archlib}\n";\'' % perl
+        rc,perlarch,err = env.run_command(cmd)
         ret = perlarch[:-1]
     if ret == None:
         context.Result('no')
@@ -128,75 +169,65 @@ def CheckPython(context):
     cmd = context.env['CMD_PYTHON']
     ret = None
     if cmd:
-        ret = sysconfig.get_python_inc()
-        if not os.path.isfile(ret + '/Python.h'):
-            ret = None
+        incdir = sysconfig.get_python_inc()
+        if os.path.isfile('%s/Python.h' % incdir):
+            ret = incdir
     if ret == None:
         context.Result('no')
     else:
         context.Result(ret)
     return ret
 
-env['CMD_JAVAC'] = None
-env['JAVA_HOME'] = None
-env['CMD_PHP'] = None
-env['CMD_PHPCONFIG'] = None
-env['PHP_INCLUDE'] = None
-env['CMD_PYTHON'] = None
-env['CMD_PYTHONINC'] = None
-env['CMD_RUBY'] = None
-env['CMD_GEM'] = None
-env['CMD_RUBYARCH'] = None
-env['CMD_LISP'] = None
-env['CMD_PERL'] = None
-env['CMD_PERLARCH'] = None
-env['CMD_LUA'] = None
-env['CMD_SCALA'] = None
-
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
-                                       'CheckRuby' : CheckRuby,
+                                       'CheckRubyHdr' : CheckRubyHdr,
                                        'CheckLisp' : CheckLisp,
                                        'CheckLua' : CheckLua,
+                                       'CheckLuaCflags' : CheckLuaCflags,
+                                       'CheckLuaLDflags' : CheckLuaLDflags,
                                        'CheckPerl' : CheckPerl,
                                        'CheckPython' : CheckPython,
                                        'CheckPHP': CheckPHP })
-env['CMD_SWIG'] = conf.CheckBinary('swig')
+env['CMD_SWIG'] = conf.CheckBinary('swig') or conf.CheckBinary('swig3.0') or conf.CheckBinary('swig2.0')
 if env['CMD_SWIG']:
     if env['PLATFORM'] != 'ios':
         env['CMD_JAVAC'] = conf.CheckBinary('javac')
         if env['CMD_JAVAC']:
             env['JAVA_HOME'] = conf.CheckJava()
     if not env['PLATFORM'] in [ 'android', 'ios' ]:
+        env['CMD_CLOJURE'] = conf.CheckBinary('clojure')
         env['CMD_PHP'] = conf.CheckBinary('php')
         if env['CMD_PHP']:
             env['CMD_PHPCONFIG'] = conf.CheckBinary('php-config')
             env['PHP_INCLUDE'] = conf.CheckPHP()
         env['CMD_PYTHON'] = conf.CheckBinary('python')
         if env['CMD_PYTHON']:
-            env['CMD_PYTHONINC'] = conf.CheckPython()
+            env['PYTHON_INC'] = conf.CheckPython()
         env['CMD_RUBY'] = conf.CheckBinary('ruby')
         if env['CMD_RUBY']:
             env['CMD_GEM'] = conf.CheckBinary('gem')
-            env['CMD_RUBYARCH'] = conf.CheckRuby()
+            env['RUBY_HDRDIRS'] = conf.CheckRubyHdr()
         env['CMD_LISP'] = conf.CheckLisp()
         env['CMD_LUA'] = conf.CheckLua()
+        if env['CMD_LUA']:
+            env['LUA_CFLAGS'] = conf.CheckLuaCflags()
+            env['LUA_LDFLAGS'] = conf.CheckLuaLDflags()
         env['CMD_PERL'] = conf.CheckBinary('perl')
         if env['CMD_PERL']:
-            env['CMD_PERLARCH'] = conf.CheckPerl()
+            env['PERL_ARCH'] = conf.CheckPerl()
         env['CMD_SCALA'] = conf.CheckBinary('scalac')
 env = conf.Finish()
 
 #
 # Python
 #
-if env['CMD_PYTHON'] and env['CMD_PYTHONINC']:
+if env.CreateBinding('python'):
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     if sys.platform == 'darwin':
         libs += [ 'python' ]
     python = env.Command([ 'cmyth_python.cpp', 'cmyth.py' ],
                          interface,
-                         [ cmd_python % ('python', 'cmyth_python.cpp') ])
+                         [ cmd_python % (env['CMD_SWIG'], 'python', 'cmyth_python.cpp') ])
     targets += python
     shared = env.SharedLibrary('cmyth_python',
                                [ 'cmyth_python.cpp' ],
@@ -205,7 +236,7 @@ if env['CMD_PYTHON'] and env['CMD_PYTHONINC']:
                                CCFLAGS = '',
                                CXXFLAGS = env['DEBUGFLAGS'],
                                CPPPATH = [ '../include', '.',
-                                           env['CMD_PYTHONINC'] ],
+                                           env['PYTHON_INC'] ],
                                LIBPATH = [ '../libcppmyth',
                                            '../libcmyth',
                                            '../librefmem' ])
@@ -237,10 +268,10 @@ if env['CMD_PYTHON'] and env['CMD_PYTHONINC']:
 #
 # PHP
 #
-if env['CMD_PHP'] != None and env['CMD_PHPCONFIG'] != None and env['PHP_INCLUDE'] != None:
+if env.CreateBinding('php'):
     php = env.Command([ 'cmyth_php.cpp', 'php_cmyth.h', 'cmyth.php' ],
                       interface,
-                      [ cmd % ('php', 'cmyth_php.cpp') ])
+                      [ cmd % (env['CMD_SWIG'], 'php', 'cmyth_php.cpp') ])
     targets += php
     phpinc = env['PHP_INCLUDE']
     if sys.platform == 'darwin':
@@ -275,8 +306,7 @@ if env['CMD_PHP'] != None and env['CMD_PHPCONFIG'] != None and env['PHP_INCLUDE'
 #
 # Ruby
 #
-if env['CMD_RUBY'] != None and env['CMD_RUBYARCH'] != None:
-    rubyarch = env['CMD_RUBYARCH']
+if env.CreateBinding('ruby'):
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
     suffix = '.so'
     if sys.platform == 'darwin':
@@ -284,16 +314,16 @@ if env['CMD_RUBY'] != None and env['CMD_RUBYARCH'] != None:
         suffix = '.bundle'
     ruby = env.Command([ 'cmyth_ruby.cpp' ],
                        interface,
-                       [ cmd % ('ruby', 'cmyth_ruby.cpp') ])
+                       [ cmd % (env['CMD_SWIG'], 'ruby', 'cmyth_ruby.cpp') ])
     targets += ruby
+    hdrdirs = env['RUBY_HDRDIRS']
     shared = env.SharedLibrary('cmyth_ruby',
                                [ 'cmyth_ruby.cpp' ],
                                SHLIBSUFFIX = '.so',
                                CCFLAGS = '',
                                CXXFLAGS = env['DEBUGFLAGS'],
                                LIBS = libs,
-                               CPPPATH = [ '../include', '.',
-                                           rubyarch ],
+                               CPPPATH = [ '../include', '.' ] + hdrdirs,
                                LIBPATH = [ '../libcppmyth',
                                            '../libcmyth',
                                            '../librefmem' ])
@@ -328,7 +358,7 @@ if env['CMD_RUBY'] != None and env['CMD_RUBYARCH'] != None:
 #
 # Java
 #
-if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
+if env.CreateBinding('java'):
     javapath = env['JAVA_HOME']
     if os.path.isfile(javapath + '/include/jni.h') or \
             os.path.isfile(javapath + '/Headers/jni.h'):
@@ -362,7 +392,7 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
         src_list.append('cmyth_java.cpp')
         java = env.Command(src_list,
                            interface,
-                           [ cmd_java % ('java', 'org.mvpmc.cmyth.java',
+                           [ cmd_java % (env['CMD_SWIG'], 'java', 'org.mvpmc.cmyth.java',
                                          'swig/' + path, 'cmyth_java.cpp') ])
         targets += java
         if sys.platform == 'darwin':
@@ -420,10 +450,10 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
 #
 # Common Lisp
 #
-if env['CMD_LISP'] != None:
+if env.CreateBinding('lisp'):
     lisp = env.Command([ 'cmyth.lisp' ],
                        interface,
-                       [ cmd_c % ('cffi', 'cmyth.lisp') ])
+                       [ cmd_c % (env['CMD_SWIG'], 'cffi', 'cmyth.lisp') ])
     targets += lisp
     package = env.CatFiles([ 'lisp/cmyth.lisp' ],
                            [ lisp],
@@ -448,11 +478,11 @@ if env['CMD_LISP'] != None:
 #
 # Perl
 #
-if env['CMD_PERL'] != None and env['CMD_PERLARCH'] != None:
-    perlarch = env['CMD_PERLARCH']
+if env.CreateBinding('perl'):
+    perlarch = env['PERL_ARCH']
     perl = env.Command([ 'cmyth_perl.cpp', 'cmyth.pm' ],
                        interface,
-                       [ cmd % ('perl', 'cmyth_perl.cpp') ])
+                       [ cmd % (env['CMD_SWIG'], 'perl', 'cmyth_perl.cpp') ])
     targets += perl
     if sys.platform == 'darwin':
         linkflags = '-Wl,-flat_namespace,-undefined,warning'
@@ -480,14 +510,14 @@ if env['CMD_PERL'] != None and env['CMD_PERLARCH'] != None:
 #
 # Lua
 #
-if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
+if env.CreateBinding('lua'):
     lua = env.Command([ 'cmyth_lua.cpp' ],
                       interface,
-                      [ cmd % ('lua', 'cmyth_lua.cpp') ])
+                      [ cmd % (env['CMD_SWIG'], 'lua', 'cmyth_lua.cpp') ])
     targets += lua
     libs = [ 'cppmyth', 'cmyth', 'refmem' ]
-    cflags = env['CMD_LUA_CFLAGS'] + ' ' + env['DEBUGFLAGS']
-    linkflags = env['CMD_LUA_LDFLAGS']
+    cflags = env['LUA_CFLAGS'] + ' ' + env['DEBUGFLAGS']
+    linkflags = env['LUA_LDFLAGS']
     shared = env.SharedLibrary('cmyth_lua',
                                [ 'cmyth_lua.cpp' ],
                                SHLIBSUFFIX = '.so',

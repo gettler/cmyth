@@ -27,14 +27,11 @@ if [ "$LISP_IMPL" != "" ] ; then
 	CCL=`which ccl`
     elif [ "$LISP_IMPL" = "ecl" ] ; then
 	ECL=`which ecl`
-    elif [ "$LISP_IMPL" = "clisp" ] ; then
-	CLISP=`which clisp`
     fi
 else
     SBCL=`which sbcl`
     CCL=`which ccl`
     ECL=`which ecl`
-    CLISP=`which clisp`
 fi
 
 if [ "$SBCL" != "" ] ; then
@@ -43,8 +40,6 @@ elif [ "$CCL" != "" ] ; then
     ccl --load ${TESTDIR}/test_lisp.lisp --eval "(quit)" -- $@
 elif [ "$ECL" != "" ] ; then
     ecl -q -load ${TESTDIR}/test_lisp.lisp -eval "(quit)" -- $@
-elif [ "$CLISP" != "" ] ; then
-    clisp -q -q ${TESTDIR}/test_lisp.lisp -- $@
 else
     echo "No supported Lisp implementation found!"
 fi

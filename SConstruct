@@ -34,10 +34,10 @@ def find_binary(self, filename):
     return None
 
 def binary_exists(self, filename):
-    if self.find_binary(filename) == '':
-        return False
-    else:
+    if self.find_binary(filename):
         return True
+    else:
+        return False
 
 def run_command(self, cmd):
     command = subprocess.Popen(cmd,
@@ -155,6 +155,34 @@ def gen_version(env, target, source=None, **kw):
     f.close()
     return [ path ]
 
+def create_binding(env, language):
+    try:
+        if language == 'clojure':
+            return env['CMD_CLOJURE'] != None
+        elif language == 'java':
+            return env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None
+        elif language == 'lisp':
+            return env['CMD_LISP'] != None
+        elif language == 'lua':
+            return env['CMD_LUA'] != None and env['LUA_CFLAGS'] != None and \
+                env['LUA_LDFLAGS'] != None
+        elif language == 'perl':
+            return env['CMD_PERL'] != None and env['PERL_ARCH'] != None
+        elif language == 'php':
+            return env['CMD_PHP'] != None and env['CMD_PHPCONFIG'] != None \
+                and env['PHP_INCLUDE'] != None
+        elif language == 'python':
+            return env['CMD_PYTHON'] != None and env['PYTHON_INC'] != None
+        elif language == 'ruby':
+            return env['CMD_RUBY'] != None and env['CMD_GEM'] != None and \
+                env['RUBY_HDRDIRS'] != None
+        elif language == 'scala':
+            return env['CMD_SCALA'] != None
+        else:
+            return False
+    except:
+        return False
+
 #
 # Initialize the build environment
 #
@@ -169,6 +197,7 @@ env.AddMethod(build_shared, 'build_shared')
 env.AddMethod(shared_library, 'CMSharedLibrary')
 env.AddMethod(install_shared, 'InstallShared')
 env.AddMethod(gen_version, 'GenVersion')
+env.AddMethod(create_binding, 'CreateBinding')
 
 #
 # Save the build configuration.

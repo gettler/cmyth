@@ -2,6 +2,7 @@
 # SWIG language binding test cases.
 #
 
+import os
 import shutil
 
 Import('env')
@@ -19,7 +20,7 @@ if not env.GetOption('clean'):
         ccflags = ccflags + ' -DWITH_SSL'
     env = conf.Finish()
 
-if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
+if env.CreateBinding('java'):
     java_test = env.Java('test_java.class', 'test_java.java',
                          JAVACLASSPATH='swig')
     targets += java_test
@@ -29,18 +30,24 @@ if env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None:
         except:
             pass
 
-if env['CMD_LUA'] and env['CMD_LUA_CFLAGS'] and env['CMD_LUA_LDFLAGS']:
-    lua_cflags = ccflags + ' ' + env['CMD_LUA_CFLAGS']
-    lua_lib = '-l%s' % env['CMD_LUA']
+if env.CreateBinding('lua'):
+    lua_cflags = ccflags + ' ' + env['LUA_CFLAGS']
+    lua_ldflags = env['LUA_LDFLAGS'].strip().split()
+    lua_libs = []
+    lua_libdirs = []
+    for l in lua_ldflags:
+        if l.startswith('-l'):
+            lua_libs += [ l[2:] ]
+        if l.startswith('-L'):
+            lua_libdirs += [ l[2:] ]
     lua_test = env.Program('test_lua', 'test_lua.cpp',
                            CPPPATH = [ '../include' ],
                            CCFLAGS = lua_cflags + ' ' + ccflags,
-                           LIBS = cpplibs + [ 'cmyth_lua', lua_lib ],
-                           LIBPATH = libpath,
-                           LINKFLAGS = env['CMD_LUA_LDFLAGS'])
+                           LIBS = cpplibs + [ 'cmyth_lua' ] + lua_libs,
+                           LIBPATH = libpath + lua_libdirs)
     targets += lua_test
 
-if env['CMD_SCALA']:
+if env.CreateBinding('scala'):
     scala_test = env.Command([ 'TestScala.class', 'TestScala$.class',
                                File('TestScala$$anonfun$test_file$1.class'),
                                File('TestScala$$anonfun$test_file$2.class'),
@@ -60,5 +67,38 @@ cpp_test = env.Program('test_cpp', 'test_cpp.cpp',
                        LIBPATH = libpath)
 
 targets += cpp_test
+
+def create_test_all():
+    languages = [ 'cpp' ]
+    for l in [ 'clojure', 'java', 'lisp', 'lua', 'perl', 'php', 'python',
+               'ruby', 'scala' ]:
+        if env.CreateBinding(l):
+            languages += [ l ]
+    f = open('test_all.sh', 'w')
+    head = [
+        '#!/bin/sh',
+        '',
+        'TOP=`git rev-parse --show-toplevel`',
+        '',
+        'if [ "${TOP}" = "--show-toplevel" ] ; then',
+        '    TOP=`pwd`',
+        'fi',
+        '',
+        'TESTDIR=${TOP}/test',
+        '',
+        ]
+    f.write('\n'.join(head))
+    for l in languages:
+        f.write('${TESTDIR}/test_%s.sh $@\n' % l)
+        f.write('result_%s=$?\n' % l)
+    for l in languages:
+        f.write('echo "Result for %s: " ${result_%s}\n' % (l,l))
+    f.close()
+    os.chmod('test_all.sh', 0755)
+
+if env.GetOption('clean'):
+    env.Clean(targets, [ 'test_all.sh' ])
+else:
+    create_test_all()
 
 Return('targets')
