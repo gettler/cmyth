@@ -74,6 +74,8 @@ def create_test_all():
                'ruby', 'scala' ]:
         if env.CreateBinding(l):
             languages += [ l ]
+    if env.CreateBinding('javascript'):
+        languages += [ 'js' ]
     f = open('test_all.sh', 'w')
     head = [
         '#!/bin/sh',

@@ -30,6 +30,7 @@ To cleanup a target:
 	$ scons -c <target>
 
 To do a full cleanup:
+
 	$ scons -c distclean
 
 To specify an install prefix:
@@ -67,6 +68,7 @@ Bindings for languages other than C/C++/Objective-C:
 	 - Clojure
 	 - Common Lisp
 	 - Java
+	 - Javascript
 	 - Lua
 	 - Perl
 	 - PHP

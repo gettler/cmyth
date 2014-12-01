@@ -23,6 +23,7 @@ cmd = '%s -c++ -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_python = '%s -c++ -threads -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_c = '%s -%s -Iinclude -o swig/%s swig/cmyth.i'
 cmd_java = '%s -c++ -%s -package %s -outdir %s -o swig/%s -Iinclude swig/cmyth.i'
+cmd_js = '%s -c++ -javascript -node -o swig/%s -Iinclude swig/cmyth.i'
 
 def CheckBinary(context, name):
     context.Message('Checking for %s ...' % name)
@@ -178,6 +179,35 @@ def CheckPython(context):
         context.Result(ret)
     return ret
 
+def CheckSwigJS(context):
+    context.Message('Checking for SWIG Javascript support ...')
+    cmd = context.env['CMD_SWIG']
+    ret = None
+    if cmd:
+        rc,result,err = env.run_command('%s -help' % cmd)
+        if rc == 0 and 'javascript' in result:
+            ret = True
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
+def CheckJShdr(context):
+    context.Message('Checking for Javascript headers ...')
+    cmd = context.env['CMD_SWIG']
+    ret = None
+    for path in [ '/usr/include', '/usr/local/include' ]:
+        if os.path.exists('%s/nodejs/src' % path) and \
+                os.path.exists('%s/nodejs/deps/uv/include' % path):
+            ret = path
+            break
+    if ret == None:
+        context.Result('no')
+    else:
+        context.Result(ret)
+    return ret
+
 conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckJava' : CheckJava,
                                        'CheckRubyHdr' : CheckRubyHdr,
@@ -187,7 +217,9 @@ conf = Configure(env, custom_tests = { 'CheckBinary' : CheckBinary,
                                        'CheckLuaLDflags' : CheckLuaLDflags,
                                        'CheckPerl' : CheckPerl,
                                        'CheckPython' : CheckPython,
-                                       'CheckPHP': CheckPHP })
+                                       'CheckPHP': CheckPHP,
+                                       'CheckSwigJavascript': CheckSwigJS,
+                                       'CheckJavascriptHdr': CheckJShdr })
 env['CMD_SWIG'] = conf.CheckBinary('swig') or conf.CheckBinary('swig3.0') or conf.CheckBinary('swig2.0')
 if env['CMD_SWIG']:
     if env['PLATFORM'] != 'ios':
@@ -216,6 +248,9 @@ if env['CMD_SWIG']:
         if env['CMD_PERL']:
             env['PERL_ARCH'] = conf.CheckPerl()
         env['CMD_SCALA'] = conf.CheckBinary('scalac')
+        env['CMD_NODEJS'] = conf.CheckBinary('nodejs')
+        env['SWIG_JAVASCRIPT'] = conf.CheckSwigJavascript()
+        env['JAVASCRIPT_HEADERS'] = conf.CheckJavascriptHdr()
 env = conf.Finish()
 
 #
@@ -530,5 +565,32 @@ if env.CreateBinding('lua'):
                                            '../libcmyth',
                                            '../librefmem' ])
     targets += shared
+
+#
+# Javascript
+#
+if env.CreateBinding('javascript'):
+    hdr = env['JAVASCRIPT_HEADERS']
+    js = env.Command([ 'cmyth_js.cpp' ],
+                     interface,
+                     [ cmd_js % (env['CMD_SWIG'], 'cmyth_js.cpp') ])
+    cflags = '-DBUILDING_NODE_EXTENSION'
+    linkflags = '-Wl,-soname=cmyth.node'
+    shared = env.SharedLibrary('cmyth-node',
+                               js,
+                               SHLIBSUFFIX = '.so',
+                               LIBS = libs,
+                               CXXFLAGS = cflags,
+                               LINKFLAGS = linkflags,
+                               CPPPATH = [ '../include',
+                                           '%s/nodejs/src' % hdr,
+                                           '%s/nodejs/deps/uv/include' % hdr ],
+                               LIBPATH = [ '../libcppmyth',
+                                           '../libcmyth',
+                                           '../librefmem' ])
+    link = env.Command('cmyth.node',
+                       shared,
+                       'cp swig/libcmyth-node.so swig/cmyth.node')
+    targets += link
 
 Return('targets')

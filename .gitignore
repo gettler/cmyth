@@ -46,6 +46,7 @@ swig/*.php
 swig/*.pm
 swig/*.py
 swig/*.bundle
+swig/*.node
 swig/cmyth.lisp
 swig/lisp/cmyth.lisp
 swig/lisp/cmyth.asd

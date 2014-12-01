@@ -161,6 +161,10 @@ def create_binding(env, language):
             return env['CMD_CLOJURE'] != None
         elif language == 'java':
             return env['CMD_JAVAC'] != None and env['JAVA_HOME'] != None
+        elif language == 'javascript':
+            return env['CMD_NODEJS'] != None and \
+                env['SWIG_JAVASCRIPT'] != None and \
+                env['JAVASCRIPT_HEADERS'] != None
         elif language == 'lisp':
             return env['CMD_LISP'] != None
         elif language == 'lua':
