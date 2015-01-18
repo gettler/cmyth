@@ -1,5 +1,5 @@
 ;;;;
-;;;; Copyright (C) 2012-2013, Jon Gettler
+;;;; Copyright (C) 2012-2015, Jon Gettler
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the Lisp Lesser General Public License version 2,
@@ -87,8 +87,10 @@
 	   ,@body)))))
 
 (defmacro with-open-proginfo ((p thumb) &body body)
-  (let ((local (gensym)))
-    `(let (,local)
+  (let ((local (gensym))
+	(program (gensym)))
+    `(let (,local
+	   (,program (if ,p ,p *program*)))
        (unwind-protect
 	    (flet ((get-proginfo (which)
 		     (if (typep which 'proginfo)
@@ -96,43 +98,45 @@
 			 (if (typep which 'integer)
 			     (nth-prog which *programs*)
 			     (gethash which *programs*)))))
-	      (setf ,local (open-file (get-proginfo ,p) ,thumb))
+	      (setf ,local (open-file (get-proginfo ,program) ,thumb))
 	      (let ((*file* ,local))
 		,@body))
 	 (unless (null ,local)
 	   (release ,local))))))
 
-(defmacro with-open-recording ((p) &body body)
+(defmacro with-open-recording ((&optional (p nil)) &body body)
   `(with-open-proginfo (,p nil)
      ,@body))
 
-(defmacro with-open-thumbnail ((p) &body body)
+(defmacro with-open-thumbnail ((&optional (p nil)) &body body)
   `(with-open-proginfo (,p t)
      ,@body))
 
-(defmacro with-thumbnail-buffer ((buf &optional (which nil)) &body body)
-  `(with-file-buffer (file-buffer 1048576 ,which)
-     (with-open-thumbnail (*program*)
-       (seek 0)
-       (let ((buflen (buflen *file*))
-	     (size 0))
-	 (dotimes (i 5)
-	   (let* ((data (read-bytes))
-		  (len (array-dimension data 0)))
-	     (if (> len 0)
-		 (progn
-		   (incf size len)
-		   (setf (fill-pointer file-buffer) size)
-		   (dotimes (j len)
-		     (setf (aref file-buffer (+ j (* i buflen)))
-			   (aref data j)))))))
-	 (let ((,buf (make-array size :element-type '(unsigned-byte 8)
-				 :initial-contents file-buffer
-				 :fill-pointer size)))
-	   ,@body)))))
+(defmacro with-thumbnail-buffer ((buf &optional (p nil)) &body body)
+  (let ((program (gensym)))
+    `(let ((,program (if ,p ,p *program*)))
+       (with-file-buffer (file-buffer 1048576 ,program)
+	 (with-open-thumbnail (,program)
+	   (seek 0)
+	   (let ((buflen (buflen *file*))
+		 (size 0))
+	     (dotimes (i 5)
+	       (let* ((data (read-bytes))
+		      (len (array-dimension data 0)))
+		 (if (> len 0)
+		     (progn
+		       (incf size len)
+		       (setf (fill-pointer file-buffer) size)
+		       (dotimes (j len)
+			 (setf (aref file-buffer (+ j (* i buflen)))
+			       (aref data j)))))))
+	     (let ((,buf (make-array size :element-type '(unsigned-byte 8)
+				     :initial-contents file-buffer
+				     :fill-pointer size)))
+	       ,@body)))))))
 
-(defmacro with-recording-buffer ((buf &optional (which nil)) &body body)
-  `(with-file-buffer (file-buffer 0 ,which)
+(defmacro with-recording-buffer ((buf &optional (p *program*)) &body body)
+  `(with-file-buffer (file-buffer 0 ,p)
      (with-open-recording (*program*)
        (let ((,buf file-buffer))
 	 ,@body))))

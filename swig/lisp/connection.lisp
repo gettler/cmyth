@@ -1,5 +1,5 @@
 ;;;;
-;;;; Copyright (C) 2012-2013, Jon Gettler
+;;;; Copyright (C) 2012-2015, Jon Gettler
 ;;;;
 ;;;; This program is free software; you can redistribute it and/or modify
 ;;;; it under the terms of the Lisp Lesser General Public License version 2,
@@ -169,21 +169,21 @@
 (defmacro with-recorded ((&key (connection nil) (type nil))
 			 &body body)
   (let ((local (gensym)))
-    `(let ((,local (if nil ,connection *connection*)))
+    `(let ((,local (if ,connection ,connection *connection*)))
        (with-progs ('get-recorded ,local ,type)
 	 ,@body))))
 
 (defmacro with-pending ((&key (connection nil) (type nil))
 			&body body)
   (let ((local (gensym)))
-    `(let ((,local (if nil ,connection *connection*)))
+    `(let ((,local (if ,connection ,connection *connection*)))
        (with-progs ('get-pending ,local ,type)
 	 ,@body))))
 
 (defmacro with-scheduled ((&key (connection nil) (type nil))
 			  &body body)
   (let ((local (gensym)))
-    `(let ((,local (if nil ,connection *connection*)))
+    `(let ((,local (if ,connection ,connection *connection*)))
        (with-progs ('get-scheduled ,local ,type)
 	 ,@body))))
 
